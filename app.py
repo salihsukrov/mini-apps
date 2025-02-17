@@ -528,18 +528,12 @@ def after_payment():
     """
 
 
-# ЗАПУСК ПРИЛОЖЕНИЯ
-# -----------------------------
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    return "Hello from Flask!"
+
 if __name__ == "__main__":
-    # Считываем значение PORT из переменных окружения
-    port_str = os.getenv("PORT", "8080")
-
-    try:
-        PORT = int(port_str)
-    except ValueError:
-        # Если значение не получилось конвертировать в int,
-        # используем порт 8080
-        PORT = 8080
-
-    # Запускаем Flask на 0.0.0.0:PORT
-    app.run(host="0.0.0.0", port=PORT)
+    port = int(os.getenv("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
