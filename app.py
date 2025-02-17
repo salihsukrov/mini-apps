@@ -6,15 +6,15 @@ import uuid
 from datetime import datetime, timedelta
 
 import requests
-from flask import Flask, request, render_template_string, redirect, url_for, jsonify
+from flask import Flask, request, render_template_string, redirect, url_for
 
-# yoomoney - при необходимости
+# yoomoney (при необходимости)
 try:
     from yoomoney import Quickpay, Client
 except ImportError:
     Quickpay = None
     Client = None
-    print("yoomoney не установлен! pip install yoomoney")
+    print("yoomoney не установлен! (pip install yoomoney)")
 
 app = Flask(__name__)
 
@@ -24,7 +24,7 @@ app = Flask(__name__)
 DB_NAME = "surfvpn.db"
 FREE_TRIAL_DAYS = 7
 
-OUTLINE_API_URL   = os.getenv('OUTLINE_API_URL', 'https://194.87.83.100:12245/ys7r0QWOtNdWJGUDtAvqGw')
+OUTLINE_API_URL   = os.getenv('OUTLINE_API_URL', 'https://123.45.67.89:8080/API_SECRET')
 OUTLINE_API_KEY   = os.getenv('OUTLINE_API_KEY', '4d18c537-566b-46c3-b937-bcc28378b306')
 OUTLINE_DISABLE_SSL_CHECK = True
 
@@ -68,7 +68,7 @@ def get_conn():
     return sqlite3.connect(DB_NAME, check_same_thread=False)
 
 ############################
-# ПОДПИСКИ / РЕФЕРАЛЫ
+# ПОДПИСКИ / ЛОГИКА
 ############################
 def is_free_trial_used(user_id: str) -> bool:
     conn = get_conn()
@@ -161,7 +161,7 @@ def delete_outline_key(key_id: str) -> bool:
         return False
 
 ############################
-# ФОНОВЫЙ ПОТОК: УДАЛЯЕМ СТАРЫЕ
+# ФОНОВЫЙ ПОТОК УДАЛЕНИЯ
 ############################
 def subscription_checker():
     while True:
@@ -212,37 +212,41 @@ def generate_payment_url(user_id: str, amount: float, description: str):
 ############################
 # 3-ЭКРАННЫЙ INTRO
 ############################
-
 @app.route("/")
 def index():
-    # Начинаем показ экранов
     return redirect("/intro?step=1")
+
 
 INTRO1_HTML = r"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Добро пожаловать</title>
+  <title>Добро пожаловать (1/2)</title>
   <style>
+    /* Увеличенные отступы, все элементы крупнее */
     html, body {
-      margin:0; padding:0; width:100%; height:100%;
-      background:#000; color:#fff; font-family:Arial, sans-serif;
-      font-size:150%; font-weight:bold;
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: #000; color: #fff;
+      font-family: Arial, sans-serif;
+      font-size: 120%; font-weight: bold;
     }
     .page {
-      width:100%; height:100%;
-      background:url('https://raw.githubusercontent.com/salihsukrov/mini-apps/ae346474722137a5f8244a54da2a034374ea09c3/1.jpeg')
+      width: 100%; height: 100%;
+      background: url('https://raw.githubusercontent.com/salihsukrov/mini-apps/ae346474722137a5f8244a54da2a034374ea09c3/1.jpeg')
         no-repeat center center / cover;
-      position:relative;
+      position: relative;
     }
     .nav-button {
-      position:absolute; bottom:40px; left:50%; transform:translateX(-50%);
-      background:rgba(0,0,0,0.5); border:2px solid #fff; border-radius:10px;
-      color:#fff; font-size:1.3rem; padding:10px 20px; text-decoration:none;
+      position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      border: 3px solid #fff;
+      border-radius: 12px;
+      color: #fff; text-decoration: none;
+      font-size: 1.4rem; padding: 15px 25px;
     }
     .nav-button:hover {
-      background:rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.3);
     }
   </style>
 </head>
@@ -259,26 +263,30 @@ INTRO2_HTML = r"""
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Инструкция</title>
+  <title>Инструкция (2/2)</title>
   <style>
     html, body {
-      margin:0; padding:0; width:100%; height:100%;
-      background:#000; color:#fff; font-family:Arial, sans-serif;
-      font-size:150%; font-weight:bold;
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: #000; color: #fff;
+      font-family: Arial, sans-serif;
+      font-size: 120%; font-weight: bold;
     }
     .page {
-      width:100%; height:100%;
-      background:url('https://raw.githubusercontent.com/salihsukrov/mini-apps/ae346474722137a5f8244a54da2a034374ea09c3/2.jpeg')
+      width: 100%; height: 100%;
+      background: url('https://raw.githubusercontent.com/salihsukrov/mini-apps/ae346474722137a5f8244a54da2a034374ea09c3/2.jpeg')
         no-repeat center center / cover;
-      position:relative;
+      position: relative;
     }
     .nav-button {
-      position:absolute; bottom:40px; left:50%; transform:translateX(-50%);
-      background:rgba(0,0,0,0.5); border:2px solid #fff; border-radius:10px;
-      color:#fff; font-size:1.3rem; padding:10px 20px; text-decoration:none;
+      position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      border: 3px solid #fff;
+      border-radius: 12px;
+      color: #fff; text-decoration: none;
+      font-size: 1.4rem; padding: 15px 25px;
     }
     .nav-button:hover {
-      background:rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.3);
     }
   </style>
 </head>
@@ -298,11 +306,11 @@ def intro():
     elif step == "2":
         return INTRO2_HTML
     else:
-        # На 3-м шаге переходим в меню
+        # На 3м шаге идём в меню
         return redirect("/menu")
 
 ############################
-# ГЛАВНОЕ МЕНЮ
+# ГЛАВНОЕ МЕНЮ (3-я страница)
 ############################
 MAIN_MENU_HTML = r"""
 <!DOCTYPE html>
@@ -313,30 +321,35 @@ MAIN_MENU_HTML = r"""
   <style>
     html, body {
       margin:0; padding:0; background:#000; color:#fff;
-      font-family:Arial, sans-serif; font-size:150%; font-weight:bold;
+      font-family:Arial, sans-serif; font-size:120%; font-weight:bold;
       width:100%; height:100%;
     }
     .container {
-      max-width:600px; margin:40px auto; padding:20px;
+      max-width:700px; margin:50px auto; padding:30px;
     }
     .sub-info {
-      background:#222; border-radius:12px;
-      padding:20px; margin-bottom:20px;
+      background:#222; border-radius:14px;
+      padding:30px; margin-bottom:25px;
     }
-    .sub-title { font-size:1.2rem; margin-bottom:10px; }
-    .sub-remaining { font-size:1.6rem; margin-bottom:10px; }
+    .sub-title {
+      font-size:1.3rem; margin-bottom:10px;
+    }
+    .sub-remaining {
+      font-size:1.6rem; margin-bottom:10px;
+    }
     .sub-details {
-      display:flex; gap:10px; margin-bottom:5px;
+      display:flex; gap:14px; margin-bottom:5px;
     }
     .sub-detail-box {
-      background:#333; border-radius:8px;
-      padding:5px 10px;
+      background:#333; border-radius:10px;
+      padding:10px 15px;
     }
     .menu-btn {
-      display:block; width:100%; background:#333; color:#fff;
-      text-align:left; padding:15px; margin:10px 0;
-      border:none; border-radius:8px;
-      font-size:1rem; cursor:pointer;
+      display:block; width:100%;
+      background:#333; color:#fff;
+      text-align:left; padding:20px;
+      margin:10px 0; border:none; border-radius:10px;
+      font-size:1.2rem; cursor:pointer;
     }
     .menu-btn:hover {
       background:#444;
@@ -354,10 +367,18 @@ MAIN_MENU_HTML = r"""
       </div>
     </div>
 
-    <button class="menu-btn" onclick="location.href='/partner';">💎 Бонусы</button>
-    <button class="menu-btn" onclick="location.href='/instruction';">⚙ Установка и настройка</button>
-    <button class="menu-btn" onclick="location.href='/support';">❓ Поддержка</button>
-    <button class="menu-btn" onclick="location.href='/get_vpn';">🔥 Получить VPN</button>
+    <button class="menu-btn" onclick="location.href='/partner';">
+      💎 Бонусы
+    </button>
+    <button class="menu-btn" onclick="location.href='/instruction';">
+      ⚙ Установка и настройка
+    </button>
+    <button class="menu-btn" onclick="location.href='/support';">
+      ❓ Поддержка
+    </button>
+    <button class="menu-btn" onclick="location.href='/get_vpn';">
+      🔥 Получить VPN
+    </button>
   </div>
 </body>
 </html>
@@ -365,7 +386,6 @@ MAIN_MENU_HTML = r"""
 
 @app.route("/menu")
 def main_menu():
-    # Здесь можно опросить user_id из query/get, но для демо берём DEMO_USER
     user_id = "DEMO_USER"
     row = get_subscription(user_id)
     if row:
@@ -376,7 +396,7 @@ def main_menu():
             if exp_dt > now:
                 diff = exp_dt - now
                 days_left = diff.days
-                status = "Оффлайн"   # Либо "Онлайн" - по желанию
+                status = "Оффлайн"  # Можно прописать «Онлайн»
                 sub_state = "Активна"
             else:
                 days_left = 0
@@ -398,7 +418,7 @@ def main_menu():
     )
 
 ############################
-# "ПОЛУЧИТЬ VPN"
+# ПОЛУЧИТЬ VPN
 ############################
 GET_VPN_HTML = r"""
 <!DOCTYPE html>
@@ -409,28 +429,30 @@ GET_VPN_HTML = r"""
   <style>
     html, body {
       margin:0; padding:0; background:#000; color:#fff;
-      font-family:Arial, sans-serif; font-size:150%; font-weight:bold;
+      font-family:Arial, sans-serif; font-size:120%; font-weight:bold;
       width:100%; height:100%;
     }
     .container {
-      max-width:500px; margin:40px auto; padding:20px;
+      max-width:600px; margin:50px auto; padding:30px;
     }
     .title {
-      font-size:1.8rem; margin-bottom:20px;
+      font-size:1.6rem; margin-bottom:20px;
     }
     .option {
-      background:#333; border-radius:8px;
-      padding:15px; margin:10px 0; cursor:pointer;
+      background:#333; border-radius:10px;
+      padding:20px; margin:15px 0; cursor:pointer;
     }
     .option:hover {
       background:#444;
     }
-    a { color:#fff; text-decoration:none; }
+    a {
+      color:#fff; text-decoration:none;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="title">Выберите вариант:</div>
+    <div class="title">Продлить/Получить VPN</div>
 
     <div class="option">
       <a href="/free_trial?user_id=DEMO_USER">1 неделя (бесплатно)</a>
@@ -456,12 +478,12 @@ def get_vpn():
     return GET_VPN_HTML
 
 ############################
-# МАРШРУТЫ: /support, /instruction, /partner
+# МАРШРУТЫ /support /instruction /partner
 ############################
 @app.route("/support")
 def page_support():
     html = """
-    <div style="max-width:800px; margin:40px auto; background:#222; padding:30px; border-radius:10px; color:#fff; font-size:150%; font-weight:bold;">
+    <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
       <h2>Поддержка</h2>
       <p>Связаться: @SURFGUARD_VPN_help</p>
       <a href="/menu" style="color:#fff;">← Меню</a>
@@ -472,9 +494,9 @@ def page_support():
 @app.route("/instruction")
 def page_instruction():
     html = """
-    <div style="max-width:800px; margin:40px auto; background:#222; padding:30px; border-radius:10px; color:#fff; font-size:150%; font-weight:bold;">
+    <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
       <h2>Инструкция</h2>
-      <p>Настройка Outline VPN...</p>
+      <p>Шаги по настройке Outline и т.д.</p>
       <a href="/menu" style="color:#fff;">← Меню</a>
     </div>
     """
@@ -483,9 +505,9 @@ def page_instruction():
 @app.route("/partner")
 def page_partner():
     html = """
-    <div style="max-width:800px; margin:40px auto; background:#222; padding:30px; border-radius:10px; color:#fff; font-size:150%; font-weight:bold;">
-      <h2>Бонусы / Партнёрка</h2>
-      <p>Пригласите 5 друзей — получите +1 месяц!</p>
+    <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
+      <h2>Партнёрская программа</h2>
+      <p>Пригласите 5 друзей = +1 месяц VPN!</p>
       <a href="/menu" style="color:#fff;">← Меню</a>
     </div>
     """
@@ -499,18 +521,17 @@ def free_trial():
     user_id = request.args.get("user_id", "DEMO_USER")
     if is_free_trial_used(user_id):
         return render_template_string("""
-        <div style="max-width:800px; margin:40px auto; background:#222; padding:30px; border-radius:10px; color:#fff; font-size:150%; font-weight:bold;">
+        <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
           <h2>Бесплатная неделя</h2>
           <p>Вы уже использовали бесплатную неделю.</p>
           <a href="/menu" style="color:#fff;">← Меню</a>
         </div>
         """)
-    # Создаём Outline key
     key_name = f"{datetime.now():%Y-%m-%d %H:%M} - {user_id}"
     access_url, key_id = create_outline_key(key_name)
     if not access_url:
         return render_template_string("""
-        <div style="max-width:800px; margin:40px auto; background:#222; padding:30px; border-radius:10px; color:#fff; font-size:150%; font-weight:bold;">
+        <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
           <h2>Ошибка</h2>
           <p>Не удалось создать ключ.</p>
           <a href="/menu" style="color:#fff;">← Меню</a>
@@ -520,9 +541,9 @@ def free_trial():
     set_free_trial_used(user_id)
     save_subscription(user_id, access_url, key_id, expiration)
     return render_template_string(f"""
-    <div style="max-width:800px; margin:40px auto; background:#222; padding:30px; border-radius:10px; color:#fff; font-size:150%; font-weight:bold;">
-      <h2>Бесплатная неделя активирована</h2>
-      <p>Outline key: <code>{access_url}</code></p>
+    <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
+      <h2>Бесплатная неделя активирована!</h2>
+      <p>Ваш Outline key: <code>{access_url}</code></p>
       <p>Действует до {expiration:%Y-%m-%d %H:%M}</p>
       <a href="/menu" style="color:#fff;">← Меню</a>
     </div>
@@ -547,7 +568,7 @@ def pay():
         desc = "Оплата VPN (6 месяцев)"
     else:
         return render_template_string("""
-        <div style="max-width:800px; margin:40px auto; background:#222; padding:30px; border-radius:10px; color:#fff; font-size:150%; font-weight:bold;">
+        <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
           <h2>Ошибка</h2>
           <p>Неверный план</p>
           <a href="/menu" style="color:#fff;">← Меню</a>
@@ -557,7 +578,7 @@ def pay():
     pay_url = generate_payment_url(user_id, amount, desc)
     if not pay_url:
         return render_template_string("""
-        <div style="max-width:800px; margin:40px auto; background:#222; padding:30px; border-radius:10px; color:#fff; font-size:150%; font-weight:bold;">
+        <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
           <h2>Ошибка оплаты</h2>
           <p>Не удалось сгенерировать ссылку.</p>
           <a href="/menu" style="color:#fff;">← Меню</a>
@@ -565,10 +586,10 @@ def pay():
         """)
 
     return render_template_string(f"""
-    <div style="max-width:800px; margin:40px auto; background:#222; padding:30px; border-radius:10px; color:#fff; font-size:150%; font-weight:bold;">
+    <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
       <h2>{desc} ({amount}₽)</h2>
       <p><a href="{pay_url}" target="_blank" style="color:#fff;">Оплатить</a></p>
-      <p>После оплаты <a href="/after_payment?user_id={user_id}&days={days}" style="color:#fff;">нажмите сюда</a> для активации.</p>
+      <p>После оплаты <a href="/after_payment?user_id={user_id}&days={days}" style="color:#fff;">нажмите сюда</a>, чтобы активировать доступ.</p>
       <a href="/menu" style="color:#fff;">← Меню</a>
     </div>
     """)
@@ -577,7 +598,6 @@ def pay():
 def after_payment():
     user_id = request.args.get("user_id", "DEMO_USER")
     days_str = request.args.get("days", "30")
-
     try:
         days = int(days_str)
     except:
@@ -587,20 +607,21 @@ def after_payment():
     access_url, key_id = create_outline_key(key_name)
     if not access_url:
         return render_template_string("""
-        <div style="max-width:800px; margin:40px auto; background:#222; padding:30px; border-radius:10px; color:#fff; font-size:150%; font-weight:bold;">
+        <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
           <h2>Ошибка</h2>
-          <p>Не удалось создать ключ</p>
+          <p>Не удалось создать ключ!</p>
           <a href="/menu" style="color:#fff;">← Меню</a>
         </div>
         """)
 
     expiration = datetime.now() + timedelta(days=days)
     save_subscription(user_id, access_url, key_id, expiration)
+
     return render_template_string(f"""
-    <div style="max-width:800px; margin:40px auto; background:#222; padding:30px; border-radius:10px; color:#fff; font-size:150%; font-weight:bold;">
+    <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
       <h2>Платёж подтверждён</h2>
       <p>Подписка действует до {expiration:%Y-%m-%d %H:%M}.</p>
-      <p>Ваш Outline key: <code>{access_url}</code></p>
+      <p>Outline key: <code>{access_url}</code></p>
       <a href="/menu" style="color:#fff;">← Меню</a>
     </div>
     """)
