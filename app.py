@@ -1,79 +1,80 @@
 import os
 import sqlite3
-import uuid
-import logging
-from datetime import datetime, timedelta
-from threading import Thread
+import threading
 import time
+import uuid
+from datetime import datetime, timedelta
 
-import requests  # будем использовать для Outline API
-from flask import Flask, request, render_template_string, redirect, url_for
+import requests
+from flask import Flask, request, render_template_string, redirect, url_for, jsonify
 
-# -----------------------------
-#  Внешняя библиотека YooMoney
-# -----------------------------
+# Если нужна библиотека yoomoney, убедитесь, что она установлена:
+# pip install yoomoney
 try:
     from yoomoney import Quickpay, Client
 except ImportError:
     Quickpay = None
     Client = None
-    logging.warning("yoomoney не установлен. Установите, иначе оплаты работать не будут.")
+    print("yoomoney не установлен! Установите его через pip install yoomoney")
 
 # -----------------------------
 #  НАСТРОЙКИ / КОНСТАНТЫ
 # -----------------------------
-# Подставьте свои реальные значения или храните в переменных окружения
+API_TOKEN = "TELEGRAM_BOT_TOKEN_IGNORED"  # здесь уже не используется
 YOOMONEY_TOKEN    = os.getenv('YOOMONEY_TOKEN', '4100116412273743.9FF0D8315EF8D02914C839B78EAFF293DC40AF6FF2F0E0BB0B312E709C950E13462F1D21594AF6602C672CE7099E66EF89971092FE5721FD778ED82C94531CE214AF890905832DC355814DA3564B7F27C0F61AC402A9FBE0784E6DF116851ECDA2A8C1DA6BBE1B2B85E72BF04FBFBC61085747E5F662CF0406DB9CB4B36EF809')
 YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
-
-# Outline API: 
 OUTLINE_API_URL   = os.getenv('OUTLINE_API_URL', 'https://194.87.83.100:12245/ys7r0QWOtNdWJGUDtAvqGw')
-OUTLINE_API_KEY   = os.getenv('OUTLINE_API_KEY', '4d18c537-566b-46c3-b937-bcc28378b306')  # Bearer-токен, если нужно
-OUTLINE_DISABLE_SSL_CHECK = True  # Иногда надо отключать проверку SSL (небезопасно!)
+OUTLINE_API_KEY   = os.getenv('OUTLINE_API_KEY', '4d18c537-566b-46c3-b937-bcc28378b306')
+OUTLINE_DISABLE_SSL_CHECK = True  # если нужно отключать SSL проверку
 
-# Срок бесплатного периода
+DB_NAME = "surfvpn.db"
 FREE_TRIAL_DAYS = 7
 
-# -----------------------------
-#  ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
-# -----------------------------
+BG_IMAGE_URL = "https://via.placeholder.com/1200x800.png?text=Your+BG+Here"  # замените на ссылку на ваш фон
+
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
 
-# Создаём (если нет) базу данных SQLite
-DB_NAME = "vpn_app.db"
-
+# -----------------------------
+#  СОЗДАНИЕ ТАБЛИЦ БАЗЫ
+# -----------------------------
 def init_db():
-    with sqlite3.connect(DB_NAME) as conn:
-        c = conn.cursor()
-        # Таблица пользователей
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id TEXT PRIMARY KEY,
-                free_trial_used INTEGER DEFAULT 0
-            )
-        """)
-        # Таблица подписок
-        c.execute("""
-            CREATE TABLE IF NOT EXISTS subscriptions (
-                user_id TEXT PRIMARY KEY,
-                outline_key TEXT,
-                key_id TEXT,
-                expiration TEXT  -- datetime в формате ISO
-            )
-        """)
-        conn.commit()
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY,
+            free_trial_used INTEGER DEFAULT 0
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            user_id TEXT PRIMARY KEY,
+            outline_key TEXT,
+            key_id TEXT,
+            expiration TEXT
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS referrals (
+            referrer_id TEXT,
+            referral_id TEXT,
+            display_name TEXT,
+            PRIMARY KEY(referrer_id, referral_id)
+        )
+    """)
+    conn.commit()
+    conn.close()
 
 init_db()
 
-# -----------------------------
-#  УТИЛИТЫ ДЛЯ РАБОТЫ С БАЗОЙ
-# -----------------------------
-def get_db_connection():
+def get_conn():
     return sqlite3.connect(DB_NAME, check_same_thread=False)
 
+# -----------------------------
+#  УТИЛЫ ИЗ test33.py
+# -----------------------------
 def is_free_trial_used(user_id: str) -> bool:
-    conn = get_db_connection()
+    conn = get_conn()
     c = conn.cursor()
     c.execute("SELECT free_trial_used FROM users WHERE user_id=?", (user_id,))
     row = c.fetchone()
@@ -83,7 +84,7 @@ def is_free_trial_used(user_id: str) -> bool:
     return bool(row[0])
 
 def set_free_trial_used(user_id: str):
-    conn = get_db_connection()
+    conn = get_conn()
     c = conn.cursor()
     c.execute("""
         INSERT INTO users (user_id, free_trial_used)
@@ -94,7 +95,7 @@ def set_free_trial_used(user_id: str):
     conn.close()
 
 def save_subscription(user_id: str, outline_key: str, key_id: str, expiration: datetime):
-    conn = get_db_connection()
+    conn = get_conn()
     c = conn.cursor()
     c.execute("""
         INSERT INTO subscriptions (user_id, outline_key, key_id, expiration)
@@ -105,27 +106,54 @@ def save_subscription(user_id: str, outline_key: str, key_id: str, expiration: d
     conn.close()
 
 def get_subscription(user_id: str):
-    conn = get_db_connection()
+    conn = get_conn()
     c = conn.cursor()
     c.execute("SELECT outline_key, key_id, expiration FROM subscriptions WHERE user_id=?", (user_id,))
     row = c.fetchone()
     conn.close()
-    return row  # (outline_key, key_id, expiration_str) или None
+    return row  # (outline_key, key_id, expiration_str) or None
 
 def remove_subscription(user_id: str):
-    conn = get_db_connection()
+    conn = get_conn()
     c = conn.cursor()
     c.execute("DELETE FROM subscriptions WHERE user_id=?", (user_id,))
     conn.commit()
     conn.close()
 
+def add_referral(referrer_id: str, referral_id: str, display_name: str):
+    conn = get_conn()
+    c = conn.cursor()
+    try:
+        c.execute("""
+            INSERT INTO referrals (referrer_id, referral_id, display_name)
+            VALUES (?, ?, ?)
+        """, (referrer_id, referral_id, display_name))
+        conn.commit()
+    except Exception as e:
+        print(f"Error adding referral: {e}")
+    conn.close()
+
+def get_referral_count(referrer_id: str) -> int:
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM referrals WHERE referrer_id=?", (referrer_id,))
+    row = c.fetchone()
+    conn.close()
+    return row[0] if row else 0
+
+def get_referrals_list(referrer_id: str):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute("SELECT referral_id, display_name FROM referrals WHERE referrer_id=?", (referrer_id,))
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
 # -----------------------------
-#  OUTLINE API: СОЗДАНИЕ / УДАЛЕНИЕ КЛЮЧА
+#  Outline API
 # -----------------------------
 def create_outline_key(name: str):
-    """
-    Создаёт ключ в Outline. Возвращает (access_url, key_id) или (None, None) при ошибке.
-    """
+    """Создаёт ключ в Outline. Возвращает (access_url, key_id) или (None, None)."""
     headers = {"Content-Type": "application/json"}
     if OUTLINE_API_KEY:
         headers["Authorization"] = f"Bearer {OUTLINE_API_KEY}"
@@ -142,15 +170,12 @@ def create_outline_key(name: str):
             j = resp.json()
             return j.get("accessUrl"), j.get("id")
         else:
-            logging.error(f"Create key failed: {resp.status_code}, {resp.text}")
+            print(f"Error create key: {resp.status_code}, {resp.text}")
     except Exception as e:
-        logging.error(f"Error create_outline_key: {e}")
+        print(f"create_outline_key error: {e}")
     return None, None
 
-def delete_outline_key(key_id: str):
-    """
-    Удаляет ключ в Outline.
-    """
+def delete_outline_key(key_id: str) -> bool:
     if not key_id:
         return False
     headers = {}
@@ -166,20 +191,16 @@ def delete_outline_key(key_id: str):
         )
         return resp.status_code in (200, 204)
     except Exception as e:
-        logging.error(f"Error delete_outline_key: {e}")
+        print(f"delete_outline_key error: {e}")
         return False
 
 # -----------------------------
-#  ФОНОВАЯ УТИЛИТА: УДАЛЕНИЕ ПРОСРОЧЕННЫХ ПОДПИСОК
+#  УДАЛЕНИЕ ПРОСРОЧЕННЫХ ПОДПИСОК
 # -----------------------------
 def subscription_checker():
-    """
-    Фоновый поток: каждые N минут проверяет, не истекли ли у кого-то подписки,
-    и при необходимости удаляет ключ Outline + запись из БД.
-    """
     while True:
         try:
-            conn = get_db_connection()
+            conn = get_conn()
             c = conn.cursor()
             c.execute("SELECT user_id, key_id, expiration FROM subscriptions")
             rows = c.fetchall()
@@ -188,49 +209,42 @@ def subscription_checker():
                 if not expiration_str:
                     continue
                 try:
-                    expiration_dt = datetime.fromisoformat(expiration_str)
+                    exp_dt = datetime.fromisoformat(expiration_str)
                 except:
                     continue
-                if expiration_dt < now:
-                    # Срок подписки истёк — удаляем
+                if exp_dt < now:
                     ok = delete_outline_key(key_id)
                     if ok:
                         c.execute("DELETE FROM subscriptions WHERE user_id=?", (user_id,))
                         conn.commit()
-                        logging.info(f"Subscription {user_id} expired, key deleted.")
+                        print(f"Subscription for user {user_id} expired, key {key_id} deleted.")
             conn.close()
         except Exception as e:
-            logging.error(f"subscription_checker error: {e}")
-        time.sleep(60)  # чекать раз в минуту (для примера)
+            print(f"subscription_checker error: {e}")
+        time.sleep(60)
 
-Thread(target=subscription_checker, daemon=True).start()
+threading.Thread(target=subscription_checker, daemon=True).start()
 
 # -----------------------------
-#  СКЕЛЕТ ЛОГИКИ ОПЛАТЫ (YooMoney)
+#  Генерация ссылки на оплату YooMoney
 # -----------------------------
 def generate_payment_url(user_id: str, amount: float, description: str) -> str:
-    """
-    Генерируем ссылку на оплату через YooMoney.
-    В реальном использовании стоит также настраивать callbackURL, проверять статус платежа и т.д.
-    """
     if not Quickpay:
-        # Если yoomoney не установлен
+        print("yoomoney не установлен, ссылка не будет сгенерирована")
         return ""
-
     payment_label = f"vpn_{user_id}_{uuid.uuid4().hex}"
     quickpay = Quickpay(
         receiver=YOOMONEY_RECEIVER,
         quickpay_form="shop",
         targets=description,
-        paymentType="AC",   # банковская карта
+        paymentType="AC",
         sum=amount,
         label=payment_label
     )
-    invoice_url = quickpay.base_url
-    return invoice_url
+    return quickpay.base_url
 
 # -----------------------------
-#  ШАБЛОН ГЛАВНОЙ СТРАНИЦЫ
+#  ГЛАВНАЯ СТРАНИЦА С АНИМАЦИЕЙ
 # -----------------------------
 INDEX_HTML = r"""
 <!DOCTYPE html>
@@ -239,310 +253,233 @@ INDEX_HTML = r"""
   <meta charset="UTF-8"/>
   <title>VPN SURFGUARD</title>
   <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <!-- Animate.css -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <style>
     body {
-      background: #f0f0f0;
+      background: url('{{ bg_image }}') no-repeat center center fixed;
+      background-size: cover;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      margin: 0; padding: 0;
     }
-    .header {
-      margin-top: 40px;
-      text-align: center;
+    .overlay {
+      background-color: rgba(0,0,0,0.6);
+      min-height: 100vh;
+      padding: 40px 20px;
     }
-    .card {
-      margin: 20px;
-      border-radius: 10px;
+    .main-content {
+      max-width: 700px;
+      margin: 0 auto; text-align: center; margin-top: 60px;
+      padding: 20px;
+      border-radius: 8px;
     }
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
+    .heading {
+      margin-bottom: 30px;
+      text-shadow: 1px 1px 3px #000;
     }
-    .vpn-logo {
-      width: 80px;
+    .desc {
+      margin-bottom: 40px;
+      line-height: 1.5;
+      text-shadow: 0 0 3px #000;
+      white-space: pre-wrap;
     }
+    .btn-animated { margin: 10px; animation-duration: 1s; animation-delay: 0.3s; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <img src="https://via.placeholder.com/80?text=VPN" class="vpn-logo" alt="VPN Logo" />
-      <h1 class="mt-3">VPN SURFGUARD</h1>
-      <p class="text-muted">Современный VPN-сервис с мгновенным доступом</p>
-    </div>
+  <div class="overlay">
+    <div class="main-content animate__animated animate__fadeInUp">
+      <h1 class="heading animate__animated animate__fadeInDown">
+        🔥 Добро пожаловать в VPN SURFGUARD!
+      </h1>
+      <div class="desc">
+🚀 Высокая скорость, отсутствие рекламы
+🔥 Ускорь качество видео 4k на YouTube без тормозов
+🔐 Надёжный VPN для защиты данных и обеспечения анонимности.
 
-    <div class="card p-4">
-      <h4>Добро пожаловать!</h4>
-      <p>Введите Ваш уникальный идентификатор (например, номер телефона, email или любой ID), чтобы мы могли привязать подписку.</p>
-      <form method="POST" action="/set_user_id">
-        <div class="mb-3">
-          <label for="user_id" class="form-label">Ваш ID</label>
-          <input type="text" class="form-control" id="user_id" name="user_id" placeholder="Например, email или nickname" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Далее</button>
-      </form>
-    </div>
+Нажмите кнопку «Получить VPN», чтобы выбрать способ получения доступа.
 
-    <div class="text-center text-muted mt-5 mb-3">
-      <small>© VPN SURFGUARD, 2025</small>
+📌 Условия использования:
+<a href="https://surl.li/owbytz" target="_blank" style="color: #fff; text-decoration: underline;">
+  https://surl.li/owbytz
+</a>
+      </div>
+      <div class="d-grid gap-2 col-10 mx-auto">
+        <a href="{{ url_for('get_vpn_main') }}"
+           class="btn btn-success btn-lg btn-animated animate__animated animate__lightSpeedInLeft">
+          Получить VPN
+        </a>
+        <a href="{{ url_for('page_my_keys') }}"
+           class="btn btn-primary btn-lg btn-animated animate__animated animate__lightSpeedInLeft">
+          Мои ключи
+        </a>
+        <a href="{{ url_for('page_support') }}"
+           class="btn btn-warning btn-lg btn-animated animate__animated animate__lightSpeedInLeft">
+          Поддержка
+        </a>
+        <a href="{{ url_for('page_instruction') }}"
+           class="btn btn-info btn-lg btn-animated animate__animated animate__lightSpeedInLeft">
+          Инструкция
+        </a>
+        <a href="{{ url_for('page_partner') }}"
+           class="btn btn-danger btn-lg btn-animated animate__animated animate__lightSpeedInLeft">
+          Партнёрская программа
+        </a>
+      </div>
     </div>
   </div>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
 """
-
-# -----------------------------
-#  СТРАНИЦА ВЫБОРА ПОДПИСКИ
-# -----------------------------
-SUBSCRIPTIONS_HTML = r"""
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8"/>
-  <title>VPN SURFGUARD - Подписка</title>
-  <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background: #f0f0f0;
-    }
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      margin-top: 40px;
-    }
-    .card {
-      margin: 20px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>Подписка для {{ user_id }}</h2>
-    <p>Статус бесплатной недели: 
-      {% if free_used %}
-        <span class="badge bg-danger">Уже использовано</span>
-      {% else %}
-        <span class="badge bg-success">Доступно</span>
-      {% endif %}
-    </p>
-
-    {% if current_key %}
-      <div class="card p-3">
-        <h5>Ваш текущий доступ:</h5>
-        <p>Конфиг Outline (скопируйте и вставьте в приложение Outline):</p>
-        <pre style="background: #eee; padding: 10px;">{{ current_key }}</pre>
-        <p>Подписка действует до: <b>{{ expiration }}</b></p>
-      </div>
-    {% else %}
-      <p>У вас нет активной подписки</p>
-    {% endif %}
-
-    <hr/>
-    <h4>Получить VPN</h4>
-    <div class="row">
-      <div class="col-md-4 mb-3">
-        <div class="card p-3">
-          <h5>1 неделя бесплатно</h5>
-          <p>Пробный период</p>
-          {% if free_used %}
-            <button class="btn btn-secondary" disabled>Уже использовано</button>
-          {% else %}
-            <a href="/free_trial?user_id={{ user_id }}" class="btn btn-success">Активировать</a>
-          {% endif %}
-        </div>
-      </div>
-      <div class="col-md-4 mb-3">
-        <div class="card p-3">
-          <h5>1 месяц</h5>
-          <p>199₽</p>
-          <a href="/pay?user_id={{ user_id }}&period=1m" class="btn btn-primary">Оплатить</a>
-        </div>
-      </div>
-      <div class="col-md-4 mb-3">
-        <div class="card p-3">
-          <h5>3 месяца</h5>
-          <p>599₽</p>
-          <a href="/pay?user_id={{ user_id }}&period=3m" class="btn btn-primary">Оплатить</a>
-        </div>
-      </div>
-      <div class="col-md-4 mb-3">
-        <div class="card p-3">
-          <h5>6 месяцев</h5>
-          <p>1199₽</p>
-          <a href="/pay?user_id={{ user_id }}&period=6m" class="btn btn-primary">Оплатить</a>
-        </div>
-      </div>
-    </div>
-
-    <a href="/" class="btn btn-link mt-3">Выбрать другого пользователя</a>
-  </div>
-</body>
-</html>
-"""
-
-# -----------------------------
-#  МАРШРУТЫ ПРИЛОЖЕНИЯ
-# -----------------------------
 
 @app.route("/")
 def index():
-    """
-    Главная страница — предлагаем ввести user_id
-    """
-    return render_template_string(INDEX_HTML)
+    return render_template_string(INDEX_HTML, bg_image=BG_IMAGE_URL)
 
-@app.route("/set_user_id", methods=["POST"])
-def set_user_id():
-    """
-    Обработка введённого user_id. Редирект на страницу выбора подписки.
-    """
-    user_id = request.form.get("user_id")
-    if not user_id:
-        return "Ошибка: не указан user_id", 400
-    return redirect(url_for("subscriptions_page", user_id=user_id))
+# -----------------------------
+#  СТАТИЧЕСКИЕ СТРАНИЦЫ (ЗАГЛУШКИ)
+# -----------------------------
 
-@app.route("/subscriptions")
-def subscriptions_page():
+@app.route("/support")
+def page_support():
+    return "<h2>Поддержка: @SURFGUARD_VPN_help</h2>"
+
+@app.route("/instruction")
+def page_instruction():
+    return "<h2>Инструкция по настройке VPN. (Тут может быть ваш контент)</h2>"
+
+@app.route("/partner")
+def page_partner():
+    return """
+    <h2>Партнёрская программа</h2>
+    <p>Пригласите 5 друзей по вашей ссылке и получите 1 месяц бесплатного VPN!</p>
+    <p>Логика рефералов (add_referral, get_referral_count, и т.д.) может быть здесь.</p>
     """
-    Страница с кнопками: free_trial, покупка подписки и т.п.
+
+# -----------------------------
+#  «ПОЛУЧИТЬ VPN» (БЕСПЛАТНАЯ НЕДЕЛЯ / ПОДПИСКИ)
+# -----------------------------
+@app.route("/get_vpn_main")
+def get_vpn_main():
+    # Показываем небольшую страницу с кнопками:
+    html = """
+    <h2>Получить VPN</h2>
+    <ul>
+      <li><a href='/free_trial?user_id=DEMO_USER'>Бесплатная неделя</a></li>
+      <li><a href='/pay?user_id=DEMO_USER&plan=1m'>1 месяц (199₽)</a></li>
+      <li><a href='/pay?user_id=DEMO_USER&plan=3m'>3 месяца (599₽)</a></li>
+      <li><a href='/pay?user_id=DEMO_USER&plan=6m'>6 месяцев (1199₽)</a></li>
+    </ul>
+    <p>DEMO: user_id=DEMO_USER. В реальном решении вы спрашиваете у пользователя его ID/логин.</p>
     """
-    user_id = request.args.get("user_id", "")
-    if not user_id:
-        return redirect("/")
-
-    used = is_free_trial_used(user_id)
-    subs = get_subscription(user_id)
-    current_key, _, expiration_str = subs if subs else (None, None, None)
-
-    expiration = ""
-    if expiration_str:
-        try:
-            dt = datetime.fromisoformat(expiration_str)
-            expiration = dt.strftime("%Y-%m-%d %H:%M")
-        except:
-            expiration = expiration_str
-
-    return render_template_string(
-        SUBSCRIPTIONS_HTML,
-        user_id=user_id,
-        free_used=used,
-        current_key=current_key,
-        expiration=expiration
-    )
+    return html
 
 @app.route("/free_trial")
 def free_trial():
-    """
-    Активирует бесплатную неделю
-    """
-    user_id = request.args.get("user_id", "")
-    if not user_id:
-        return redirect("/")
-
-    # Проверяем, не использовал ли уже
+    user_id = request.args.get("user_id", "DEMO_USER")
     if is_free_trial_used(user_id):
-        return "Вы уже использовали бесплатную неделю. <a href='/subscriptions?user_id={0}'>Назад</a>".format(user_id)
-
-    # Пытаемся создать ключ
-    # Имя ключа — дата + user_id
+        return "Вы уже использовали бесплатную неделю."
+    # Создаём Outline key
     key_name = f"{datetime.now().strftime('%Y-%m-%d %H:%M')} - {user_id}"
     access_url, key_id = create_outline_key(key_name)
     if not access_url:
-        return "Ошибка создания ключа Outline. Попробуйте позже."
-
-    # Запоминаем в БД
-    set_free_trial_used(user_id)
+        return "Ошибка при создании ключа Outline."
     expiration = datetime.now() + timedelta(days=FREE_TRIAL_DAYS)
+    set_free_trial_used(user_id)
     save_subscription(user_id, access_url, key_id, expiration)
-
-    return redirect(url_for("subscriptions_page", user_id=user_id))
+    return f"""
+    <h2>Бесплатная неделя активирована!</h2>
+    <p>Ваш Outline key: <code>{access_url}</code></p>
+    <p>Действует до {expiration.strftime('%Y-%m-%d %H:%M')}</p>
+    """
 
 @app.route("/pay")
 def pay():
-    """
-    Генерируем ссылку на оплату для подписки
-    """
-    user_id = request.args.get("user_id", "")
-    period_code = request.args.get("period", "")
-
-    if not user_id:
-        return redirect("/")
-
-    # Определяем цену и срок
-    if period_code == "1m":
+    user_id = request.args.get("user_id", "DEMO_USER")
+    plan = request.args.get("plan", "1m")
+    if plan == "1m":
         amount = 199
         days = 30
-        desc  = "Оплата VPN (1 месяц)"
-    elif period_code == "3m":
+        desc = "Оплата VPN (1 месяц)"
+    elif plan == "3m":
         amount = 599
         days = 90
-        desc  = "Оплата VPN (3 месяца)"
-    elif period_code == "6m":
+        desc = "Оплата VPN (3 месяца)"
+    elif plan == "6m":
         amount = 1199
         days = 180
-        desc  = "Оплата VPN (6 месяцев)"
+        desc = "Оплата VPN (6 месяцев)"
     else:
-        return "Неверный период"
-
+        return "Неверный план."
     pay_url = generate_payment_url(user_id, amount, desc)
     if not pay_url:
-        return "Ошибка генерации ссылки на оплату (yoomoney не настроен?)."
-
-    # Сохраняем выбранное количество дней в сессии или во «временном» месте,
-    # но в упрощённом примере просто добавим его к URL, чтобы
-    # после оплаты пользователь вручную возвращался на /after_payment
-    # В реальности нужно настраивать callbackURL и проверять реальный статус платежа.
+        return "Ошибка генерации ссылки на оплату."
+    # В реальном решении вы бы настроили callbackURL. Здесь упрощаем:
     return f"""
-    <h3>Оплата {desc} ({amount}₽)</h3>
-    <p>Ссылка на оплату: <a href="{pay_url}" target="_blank">Перейти к оплате</a></p>
-    <p>После оплаты вернитесь и нажмите:
-       <a href="/after_payment?user_id={user_id}&days={days}">Подтвердить платёж</a></p>
-    <p><a href='/subscriptions?user_id={user_id}'>Назад</a></p>
+    <h3>{desc} ({amount}₽)</h3>
+    <p><a href="{pay_url}" target="_blank">Оплатить</a></p>
+    <p>После оплаты <a href="/after_payment?user_id={user_id}&days={days}">Подтвердить платёж</a></p>
     """
 
 @app.route("/after_payment")
 def after_payment():
-    """
-    Упрощённый маршрут «Подтвердить платёж».
-    В реальном решении здесь должна быть проверка: действительно ли пользователь оплатил.
-    """
-    user_id = request.args.get("user_id", "")
-    days = request.args.get("days", "30")
-    if not user_id or not days.isdigit():
-        return "Ошибка"
-
-    # Генерируем Outline Key
+    """Упрощённый маршрут: создаём ключ Outline и выдаём пользователю."""
+    user_id = request.args.get("user_id", "DEMO_USER")
+    days_str = request.args.get("days", "30")
+    try:
+        days = int(days_str)
+    except:
+        days = 30
     key_name = f"{datetime.now().strftime('%Y-%m-%d %H:%M')} - {user_id}"
     access_url, key_id = create_outline_key(key_name)
     if not access_url:
         return "Ошибка создания Outline ключа!"
-
-    expiration = datetime.now() + timedelta(days=int(days))
+    expiration = datetime.now() + timedelta(days=days)
     save_subscription(user_id, access_url, key_id, expiration)
-
     return f"""
-    <h3>Платёж подтверждён (условно)!</h3>
-    <p>Текущая подписка действует до {expiration.strftime('%Y-%m-%d %H:%M')}.</p>
-    <p>Ключ Outline (скопируйте в приложение):<br/>
-       <code>{access_url}</code></p>
-    <a href="/subscriptions?user_id={user_id}">Вернуться</a>
+    <h3>Платёж подтверждён условно!</h3>
+    <p>Подписка действует до {expiration.strftime('%Y-%m-%d %H:%M')}.</p>
+    <p>Ваш Outline key: <code>{access_url}</code></p>
     """
 
+# -----------------------------
+#  Мои ключи
+# -----------------------------
+@app.route("/my_keys")
+def page_my_keys():
+    # В реальном решении вы бы аутентифицировали пользователя
+    user_id = request.args.get("user_id", "DEMO_USER")
+    row = get_subscription(user_id)
+    if not row:
+        return "<h3>У вас нет активной подписки.</h3>"
+    outline_key, key_id, expiration_str = row
+    if not expiration_str:
+        return "<h3>Нет данных об истечении срока</h3>"
+    try:
+        exp_dt = datetime.fromisoformat(expiration_str)
+    except:
+        return "<h3>Ошибка парсинга даты</h3>"
+    now = datetime.now()
+    if exp_dt < now:
+        return "<h3>Ваш ключ уже истёк.</h3>"
+    remaining = exp_dt - now
+    days = remaining.days
+    hours, rem = divmod(remaining.seconds, 3600)
+    minutes, _ = divmod(rem, 60)
+    return f"""
+    <h2>Мои ключи</h2>
+    <p>Ваш ключ Outline: <code>{outline_key}</code></p>
+    <p>Истекает {exp_dt.strftime('%Y-%m-%d %H:%M')} (через {days} дней, {hours} часов, {minutes} минут)</p>
+    """
 
-app = Flask(__name__)
-
-HTML_PAGE = """
-<!DOCTYPE html>
-<html>
-<head>
-  <title>My Cool App</title>
-</head>
-<body style="font-family: sans-serif">
-  <h1>Добро пожаловать!</h1>
-  <p>Это главная страница моего приложения.</p>
-</body>
-</html>
-"""
-
-@app.route("/")
-def index():
-    return render_template_string(HTML_PAGE)
+# -----------------------------
+#  Запуск приложения
+# -----------------------------
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8080))
+    app.run(host="0.0.0.0", port=port, debug=False)
