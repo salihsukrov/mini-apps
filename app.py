@@ -536,4 +536,5 @@ def index():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    # debug=False — чтобы не показывать излишние отладочные логи
+    app.run(host="0.0.0.0", port=port, debug=False)
