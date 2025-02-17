@@ -320,16 +320,16 @@ MAIN_MENU_HTML = r"""
   <title>SurfGuard - Главное меню</title>
   <style>
     html, body {
-      margin:0; padding:0; background:#000; color:#fff;
+      margin:0; padding:0; background:#000; color:#800080;
       font-family:Arial, sans-serif; font-size:120%; font-weight:bold;
       width:100%; height:100%;
     }
     .container {
-      max-width:700px; margin:50px auto; padding:30px;
+      max-width:1400px; margin:100px auto; padding:60px;
     }
     .sub-info {
-      background:#222; border-radius:14px;
-      padding:30px; margin-bottom:25px;
+      background:#222; border-radius:28px;
+      padding:60px; margin-bottom:50px;
     }
     .sub-title {
       font-size:1.3rem; margin-bottom:10px;
@@ -347,8 +347,8 @@ MAIN_MENU_HTML = r"""
     .menu-btn {
       display:block; width:100%;
       background:#333; color:#fff;
-      text-align:left; padding:20px;
-      margin:10px 0; border:none; border-radius:10px;
+      text-align:left; padding:40px;
+      margin:20px 0; border:none; border-radius:10px;
       font-size:1.2rem; cursor:pointer;
     }
     .menu-btn:hover {
