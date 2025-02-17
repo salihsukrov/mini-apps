@@ -530,6 +530,19 @@ def after_payment():
 
 app = Flask(__name__)
 
+HTML_PAGE = """
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Cool App</title>
+</head>
+<body style="font-family: sans-serif">
+  <h1>Добро пожаловать!</h1>
+  <p>Это главная страница моего приложения.</p>
+</body>
+</html>
+"""
+
 @app.route("/")
 def index():
-    return "Hello from Flask!"
+    return render_template_string(HTML_PAGE)
