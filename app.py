@@ -26,8 +26,7 @@ YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
 
 # Outline API: 
 OUTLINE_API_URL   = os.getenv('OUTLINE_API_URL', 'https://194.87.83.100:12245/ys7r0QWOtNdWJGUDtAvqGw')
-OUTLINE_API_KEY   = os.getenv('OUTLINE_API_KEY', '4d18c537-566b-46c3-b937-bcc28378b306')  # Bearer-токен, если нужно
-OUTLINE_DISABLE_SSL_CHECK = True  # Иногда надо отключать проверку SSL (небезопасно!)
+OUTLINE_API_KEY   = os.getenv('OUTLINE_API_KEY', '4d18c537-566b-46c3-b937-bcc28378b306') 
 OUTLINE_DISABLE_SSL_CHECK = True
 
 DB_NAME = "surfvpn.db"
@@ -378,179 +377,129 @@ INDEX_HTML = r"""
 
 @app.route("/")
 def index():
-    return redirect("/welcome1")
-    # Если хотите, чтобы при заходе на главную
-    # сразу открывался /welcome1, сделайте:
-    # return redirect("/welcome1")
+    # Просто рендерит главную страницу
+    return render_template_string(INDEX_HTML, bg_image=BG_IMAGE_URL)
 
-# -----------------------------
-# Две приветственные страницы
-# -----------------------------
-WELCOME1_HTML = r"""
+
+# =============================
+# ДВА ЭКРАНА С КАРТИНКАМИ (intro)
+# =============================
+
+INTRO1_HTML = r"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>SurfGuard VPN - Добро пожаловать</title>
+  <title>SurfGuard VPN - Шаг 1</title>
   <style>
-    /* Те же большие шрифты и жирность */
-    body {
+    html, body {
       margin: 0; padding: 0;
-      background: url('https://imgur.com/a/bZepBmb') no-repeat center center fixed;
-      background-size: cover;
+      width: 100%; height: 100%;
+      background: #000;
       font-family: Arial, sans-serif;
       font-weight: bold;
       font-size: 2rem;
       color: #fff;
     }
-    .overlay {
-      width: 100vw; height: 100vh;
-      background-color: rgba(0,0,0,0.4);
-      display: flex; 
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
+    .page {
+      width: 100%; height: 100%;
+      background: url('https://imgur.com/a/bZepBmb') no-repeat center center / cover;
+      position: relative;
+    }
+    .button-container {
+      position: absolute;
+      bottom: 40px;
+      width: 100%;
       text-align: center;
     }
-    .title {
-      margin-bottom: 20px;
-      font-size: 2.6rem;
-    }
-    .arrow-btn {
-      width: 80px; height: 80px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.2);
-      border: 2px solid #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 2rem;
+    .nav-button {
+      font-size: 1.6rem;
       color: #fff;
-      cursor: pointer;
+      background: rgba(0,0,0,0.5);
+      border: 2px solid #fff;
+      padding: 10px 20px;
+      border-radius: 10px;
       text-decoration: none;
-      margin-top: 30px;
     }
-    .arrow-btn:hover {
-      background: rgba(255,255,255,0.4);
+    .nav-button:hover {
+      background: rgba(255,255,255,0.3);
     }
   </style>
 </head>
 <body>
-  <div class="overlay">
-    <div class="title">ДОБРО ПОЖАЛОВАТЬ В<br>SURFGUARD VPN</div>
-    <a class="arrow-btn" href="/welcome2">➜</a>
+  <div class="page">
+    <div class="button-container">
+      <a href="/intro?step=2" class="nav-button">Далее</a>
+    </div>
   </div>
 </body>
 </html>
 """
 
-WELCOME2_HTML = r"""
+INTRO2_HTML = r"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>SurfGuard VPN - Установка</title>
+  <title>SurfGuard VPN - Шаг 2</title>
   <style>
-    body {
+    html, body {
       margin: 0; padding: 0;
-      background: url('https://imgur.com/jUFaxsY') no-repeat center center fixed;
-      background-size: cover;
+      width: 100%; height: 100%;
+      background: #000;
       font-family: Arial, sans-serif;
       font-weight: bold;
       font-size: 2rem;
       color: #fff;
     }
-    .overlay {
-      width: 100vw; height: 100vh;
-      background-color: rgba(0,0,0,0.4);
-      display: flex; 
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 30px;
+    .page {
+      width: 100%; height: 100%;
+      background: url('https://imgur.com/jUFaxsY') no-repeat center center / cover;
+      position: relative;
     }
-    .title {
-      font-size: 2.4rem; 
-      margin-bottom: 20px;
-    }
-    .subtitle {
-      font-size: 1.4rem;
-      line-height: 1.4;
-      margin-bottom: 30px;
-      max-width: 600px;
-    }
-    .menu {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      margin-bottom: 40px;
-      width: 80%;
-      max-width: 400px;
-    }
-    .menu button {
-      background: rgba(255,255,255,0.2);
-      color: #fff;
-      font-size: 1.2rem;
-      border: 2px solid #fff;
-      padding: 12px;
-      border-radius: 8px;
-      cursor: pointer;
+    .button-container {
+      position: absolute;
+      bottom: 40px;
+      width: 100%;
       text-align: center;
     }
-    .menu button:hover {
-      background: rgba(255,255,255,0.4);
-    }
-    .arrow-btn {
-      width: 80px; height: 80px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.2);
-      border: 2px solid #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 2rem;
+    .nav-button {
+      font-size: 1.6rem;
       color: #fff;
-      cursor: pointer;
+      background: rgba(0,0,0,0.5);
+      border: 2px solid #fff;
+      padding: 10px 20px;
+      border-radius: 10px;
       text-decoration: none;
     }
-    .arrow-btn:hover {
-      background: rgba(255,255,255,0.4);
+    .nav-button:hover {
+      background: rgba(255,255,255,0.3);
     }
   </style>
 </head>
 <body>
-  <div class="overlay">
-    <div class="title">Установка и настройка</div>
-    <div class="subtitle" style="font-size:1.3rem;">
-      Для установки и настройки VPN на вашем устройстве
-      зайдите в раздел «Установка» или «Инструкция».
+  <div class="page">
+    <div class="button-container">
+      <!-- Кнопка на главную -->
+      <a href="/" class="nav-button">В меню</a>
     </div>
-    
-    <div class="menu">
-      <button onclick="location.href='/bonuses';">Бонусы</button>
-      <button onclick="location.href='/support';">Поддержка</button>
-      <button onclick="location.href='/pay?user_id=DEMO_USER&plan=1m';">Оформить подписку</button>
-      <button onclick="location.href='/instruction';">Установка и настройка</button>
-    </div>
-    
-    <a class="arrow-btn" href="/">➜</a>
   </div>
 </body>
 </html>
 """
 
-@app.route("/welcome1")
-def welcome1():
-    return WELCOME1_HTML
-
-@app.route("/welcome2")
-def welcome2():
-    return WELCOME2_HTML
+@app.route("/intro")
+def intro():
+    """Два шага: /intro?step=1 и /intro?step=2."""
+    step = request.args.get("step", "1")
+    if step == "1":
+        return INTRO1_HTML
+    else:
+        return INTRO2_HTML
 
 
 # -----------------------------
-# СТРАНИЦЫ ПОДДЕРЖКИ, ИНСТРУКЦИИ, ПАРТНЕРКИ
+# ОСТАЛЬНЫЕ СТРАНИЦЫ/МАРШРУТЫ
 # -----------------------------
 @app.route("/support")
 def page_support():
@@ -586,9 +535,6 @@ def page_partner():
     """
     return render_template_string(html)
 
-# -----------------------------
-#  «ПОЛУЧИТЬ VPN» (БЕСПЛАТНАЯ НЕДЕЛЯ / ПОДПИСКИ)
-# -----------------------------
 @app.route("/get_vpn_main")
 def get_vpn_main():
     html = """
