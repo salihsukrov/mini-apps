@@ -30,7 +30,7 @@ OUTLINE_DISABLE_SSL_CHECK = True  # если нужно отключать SSL �
 DB_NAME = "surfvpn.db"
 FREE_TRIAL_DAYS = 7
 
-BG_IMAGE_URL = "https://via.placeholder.com/1200x800.png?text=Your+BG+Here"  # замените на ссылку на ваш фон
+BG_IMAGE_URL = "https://github.com/salihsukrov/mini-apps/blob/60fbefe35116225d286b4a32d6cd8d60a8df6503/backgro.jpg"  # замените на ссылку на ваш фон
 
 app = Flask(__name__)
 
