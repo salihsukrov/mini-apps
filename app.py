@@ -376,10 +376,9 @@ INDEX_HTML = r"""
 """
 
 @app.route("/")
-@app.route("/")
 def index():
-    return redirect("/intro?step=1")
-
+    # Просто рендерит главную страницу
+    return render_template_string(INDEX_HTML, bg_image=BG_IMAGE_URL)
 
 
 # =============================
@@ -404,7 +403,7 @@ INTRO1_HTML = r"""
     }
     .page {
       width: 100%; height: 100%;
-      background: url('https://imgur.com/a/bZepBmb') no-repeat center center / cover;
+      background: url('https://ibb.co/SXZwKm4n') no-repeat center center / cover;
       position: relative;
     }
     .button-container {
@@ -455,7 +454,7 @@ INTRO2_HTML = r"""
     }
     .page {
       width: 100%; height: 100%;
-      background: url('https://imgur.com/jUFaxsY') no-repeat center center / cover;
+      background: url('https://ibb.co/0R4ffwcj') no-repeat center center / cover;
       position: relative;
     }
     .button-container {
