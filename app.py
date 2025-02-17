@@ -377,6 +377,7 @@ INDEX_HTML = r"""
 
 @app.route("/")
 def index():
+    # При старте идёт редирект на /intro?step=1
     return redirect("/intro?step=1")
 
 
@@ -402,7 +403,9 @@ INTRO1_HTML = r"""
     }
     .page {
       width: 100%; height: 100%;
-      background: url('<a href="https://github.com/salihsukrov/mini-apps/blob/main/1.jpeg?raw=true"') no-repeat center center / cover;
+      /* ВАЖНО: укажите прямой (raw) URL на 1.jpeg */
+      background: url('https://raw.githubusercontent.com/salihsukrov/mini-apps/ae346474722137a5f8244a54da2a034374ea09c3/1.jpeg')
+        no-repeat center center / cover;
       position: relative;
     }
     .button-container {
@@ -453,7 +456,9 @@ INTRO2_HTML = r"""
     }
     .page {
       width: 100%; height: 100%;
-      background: url('https://github.com/salihsukrov/mini-apps/blob/ae346474722137a5f8244a54da2a034374ea09c3/2.jpeg') no-repeat center center / cover;
+      /* ВАЖНО: укажите прямой (raw) URL на 2.jpeg */
+      background: url('https://raw.githubusercontent.com/salihsukrov/mini-apps/ae346474722137a5f8244a54da2a034374ea09c3/2.jpeg')
+        no-repeat center center / cover;
       position: relative;
     }
     .button-container {
