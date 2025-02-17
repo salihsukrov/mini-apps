@@ -20,7 +20,7 @@ except ImportError:
 # -----------------------------
 #  НАСТРОЙКИ / КОНСТАНТЫ
 # -----------------------------
-API_TOKEN = "TELEGRAM_BOT_TOKEN_IGNORED"  # здесь уже не используется
+API_TOKEN = "TELEGRAM_BOT_TOKEN_IGNORED"  # Уже не используется для Telegram
 YOOMONEY_TOKEN    = os.getenv('YOOMONEY_TOKEN', '4100116412273743.9FF0D8315EF8D02914C839B78EAFF293DC40AF6FF2F0E0BB0B312E709C950E13462F1D21594AF6602C672CE7099E66EF89971092FE5721FD778ED82C94531CE214AF890905832DC355814DA3564B7F27C0F61AC402A9FBE0784E6DF116851ECDA2A8C1DA6BBE1B2B85E72BF04FBFBC61085747E5F662CF0406DB9CB4B36EF809')
 YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
 
@@ -32,13 +32,13 @@ OUTLINE_DISABLE_SSL_CHECK = True  # Иногда надо отключать п�
 DB_NAME = "surfvpn.db"
 FREE_TRIAL_DAYS = 7
 
-# Картинка фона (в стиле киберпанк) — замените на желаемую
+# Фоновая картинка
 BG_IMAGE_URL = "https://github.com/salihsukrov/mini-apps/blob/60fbefe35116225d286b4a32d6cd8d60a8df6503/backgro.jpg"
 
 app = Flask(__name__)
 
 # -----------------------------
-#  СОЗДАНИЕ / ИНИЦИАЛИЗАЦИЯ БД
+#  ИНИЦИАЛИЗАЦИЯ БД
 # -----------------------------
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -74,7 +74,7 @@ def get_conn():
     return sqlite3.connect(DB_NAME, check_same_thread=False)
 
 # -----------------------------
-#  УТИЛИТЫ ДЛЯ ПОДПИСОК, РЕФЕРАЛОВ, БД
+#  ФУНКЦИИ ДЛЯ ПОДПИСОК, РЕФЕРАЛОВ
 # -----------------------------
 def is_free_trial_used(user_id: str) -> bool:
     conn = get_conn()
@@ -154,10 +154,9 @@ def get_referrals_list(referrer_id: str):
     return rows
 
 # -----------------------------
-#  Outline API (создание / удаление ключа)
+#  Outline API (создание / удаление)
 # -----------------------------
 def create_outline_key(name: str):
-    """Возвращает (accessUrl, key_id) или (None, None)."""
     headers = {"Content-Type": "application/json"}
     if OUTLINE_API_KEY:
         headers["Authorization"] = f"Bearer {OUTLINE_API_KEY}"
@@ -199,7 +198,7 @@ def delete_outline_key(key_id: str) -> bool:
         return False
 
 # -----------------------------
-#  Поток удаления просроченных подписок
+#  УДАЛЕНИЕ ПРОСРОЧЕННЫХ ПОДПИСОК
 # -----------------------------
 def subscription_checker():
     while True:
@@ -221,7 +220,7 @@ def subscription_checker():
                     if ok:
                         c.execute("DELETE FROM subscriptions WHERE user_id=?", (user_id,))
                         conn.commit()
-                        print(f"Subscription for user {user_id} expired, key {key_id} deleted.")
+                        print(f"Subscription {user_id} expired, key {key_id} deleted.")
             conn.close()
         except Exception as e:
             print(f"subscription_checker error: {e}")
@@ -230,7 +229,7 @@ def subscription_checker():
 threading.Thread(target=subscription_checker, daemon=True).start()
 
 # -----------------------------
-#  YooMoney — генерация ссылки
+#  YooMoney: ссылка на оплату
 # -----------------------------
 def generate_payment_url(user_id: str, amount: float, description: str) -> str:
     if not Quickpay:
@@ -248,27 +247,27 @@ def generate_payment_url(user_id: str, amount: float, description: str) -> str:
     return quickpay.base_url
 
 # -----------------------------
-#  ГЛАВНАЯ СТРАНИЦА
-#  КИБЕРПАНКОВЫЙ СТИЛЬ
+#  ГЛАВНАЯ СТРАНИЦА (Шаблон)
 # -----------------------------
 INDEX_HTML = r"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8"/>
-  <title>VPN SURFGUARD - Cyberpunk</title>
+  <title>VPN SURFGUARD - Larger White Text</title>
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <!-- Animate.css -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
   <style>
-    /* Базовые стили «киберпанк» */
+    /* Увеличенный масштаб ~1.5x */
     body {
       background: url('{{ bg_image }}') no-repeat center center fixed;
       background-size: cover;
-      color: #e0e0e0;
-      font-family: "Lucida Console", Monaco, monospace;
-      font-size: 1.25rem; /* увеличить масштаб */
+      color: #fff;  /* белый текст */
+      font-family: "Arial", sans-serif;
+      font-weight: bold;         /* жирный текст */
+      font-size: 2rem;          /* крупный шрифт */
       min-height: 100vh;
       margin: 0; padding: 0;
     }
@@ -278,50 +277,55 @@ INDEX_HTML = r"""
       padding: 60px 20px;
     }
     .main-content {
-      max-width: 800px;
+      max-width: 900px;
       margin: 0 auto;
       text-align: center;
-      border: 2px solid rgba(255,255,255,0.2);
+      padding: 40px;
       border-radius: 12px;
-      padding: 30px;
-      box-shadow: 0 0 20px rgba(0,255,255,0.2);
-      backdrop-filter: blur(8px);
+      /* Убрали свечение / тени */
+      background-color: rgba(0,0,0,0.4);
     }
     h1.heading {
       margin-bottom: 30px;
-      text-shadow: 0 0 5px #0ff, 0 0 10px #0ff;
-      font-size: 2.2rem;
+      font-size: 2.4rem;
+      /* Без glow, просто белый */
     }
     .desc {
       margin-bottom: 40px;
-      line-height: 1.6;
+      line-height: 1.4;
       white-space: pre-wrap;
-      text-shadow: 0 0 4px #0ff;
     }
-    /* Кнопки "серо-белые", крупные, с киберпанк подсветкой */
+    /* Кнопки: серо-белые, без glow */
     .btn-cyber {
-      background: linear-gradient(135deg, #444, #888);
+      background: linear-gradient(135deg, #666, #aaa);
       color: #fff;
-      font-weight: bold;
-      font-size: 1.2rem;
-      border: 1px solid #bbb;
+      border: 2px solid #ccc;
       border-radius: 8px;
-      text-shadow: 0 0 4px #fff;
-      box-shadow: 0 0 10px rgba(255,255,255,0.1);
-      transition: transform 0.2s, box-shadow 0.2s;
+      font-size: 1.8rem; /* увеличить кнопки */
+      font-weight: bold;
+      padding: 10px 20px;
+      margin: 10px;
+      transition: transform 0.2s;
     }
     .btn-cyber:hover {
       transform: scale(1.05);
-      box-shadow: 0 0 20px rgba(255,255,255,0.3);
     }
     .btn-animated {
       margin: 10px;
       animation-duration: 1s;
       animation-delay: 0.3s;
     }
-    .link-underline {
+    a, a:hover, a:visited {
+      text-decoration: none;
       color: #fff;
-      text-decoration: underline;
+    }
+    /* Дополнительный контейнер на внутренних страницах */
+    .content-page {
+      margin: 40px auto;
+      max-width: 800px;
+      background-color: rgba(0,0,0,0.5);
+      border-radius: 10px;
+      padding: 30px;
     }
   </style>
 </head>
@@ -333,33 +337,34 @@ INDEX_HTML = r"""
       </h1>
       <div class="desc">
 🚀 Высокая скорость, отсутствие рекламы
-🔥 Ускорь видео 4k на YouTube без тормозов
 🔐 Надёжный VPN для защиты и анонимности
 
 Нажмите «Получить VPN», чтобы выбрать способ доступа.
 
 📌 Условия использования:
-<a href="https://surl.li/owbytz" target="_blank" class="link-underline">https://surl.li/owbytz</a>
+<a href="https://surl.li/owbytz" target="_blank" style="color: #fff;">
+  https://surl.li/owbytz
+</a>
       </div>
       <div class="d-grid gap-3 col-10 mx-auto">
         <a href="{{ url_for('get_vpn_main') }}"
-           class="btn btn-cyber btn-lg btn-animated animate__animated animate__lightSpeedInLeft">
+           class="btn-cyber btn-animated animate__animated animate__fadeInLeft">
           Получить VPN
         </a>
         <a href="{{ url_for('page_my_keys') }}"
-           class="btn btn-cyber btn-lg btn-animated animate__animated animate__lightSpeedInLeft">
+           class="btn-cyber btn-animated animate__animated animate__fadeInLeft">
           Мои ключи
         </a>
         <a href="{{ url_for('page_support') }}"
-           class="btn btn-cyber btn-lg btn-animated animate__animated animate__lightSpeedInLeft">
+           class="btn-cyber btn-animated animate__animated animate__fadeInLeft">
           Поддержка
         </a>
         <a href="{{ url_for('page_instruction') }}"
-           class="btn btn-cyber btn-lg btn-animated animate__animated animate__lightSpeedInLeft">
+           class="btn-cyber btn-animated animate__animated animate__fadeInLeft">
           Инструкция
         </a>
         <a href="{{ url_for('page_partner') }}"
-           class="btn btn-cyber btn-lg btn-animated animate__animated animate__lightSpeedInLeft">
+           class="btn-cyber btn-animated animate__animated animate__fadeInLeft">
           Партнёрская программа
         </a>
       </div>
@@ -376,60 +381,100 @@ def index():
     return render_template_string(INDEX_HTML, bg_image=BG_IMAGE_URL)
 
 # -----------------------------
-#  ПРОЧИЕ СТРАНИЦЫ / ЛОГИКА
+#  ПОДДЕРЖКА
 # -----------------------------
-
 @app.route("/support")
 def page_support():
-    return "<h2>Поддержка: @SURFGUARD_VPN_help</h2>"
+    html = """
+    <div class="content-page">
+      <h2>Поддержка</h2>
+      <p>Связаться: @SURFGUARD_VPN_help</p>
+      <a href="/">Вернуться на главную</a>
+    </div>
+    """
+    return render_template_string(html)
 
+# -----------------------------
+#  ИНСТРУКЦИЯ
+# -----------------------------
 @app.route("/instruction")
 def page_instruction():
-    return "<h2>Инструкция по настройке VPN (здесь ваш контент)</h2>"
+    html = """
+    <div class="content-page">
+      <h2>Инструкция по настройке VPN</h2>
+      <p>Здесь ваш подробный контент, как настроить Outline и т.д.</p>
+      <a href="/">Вернуться на главную</a>
+    </div>
+    """
+    return render_template_string(html)
 
+# -----------------------------
+#  ПАРТНЕРКА
+# -----------------------------
 @app.route("/partner")
 def page_partner():
-    return """
-    <h2>Партнёрская программа</h2>
-    <p>Пригласите 5 друзей по вашей ссылке и получите +1 месяц бесплатного VPN.</p>
-    <p>(Доработайте логику рефералов под ваши нужды)</p>
+    html = """
+    <div class="content-page">
+      <h2>Партнёрская программа</h2>
+      <p>Пригласите 5 друзей и получите +1 месяц VPN!</p>
+      <p>Реализуйте логику рефералов при переходе по вашей ссылке и т.д.</p>
+      <a href="/">Вернуться на главную</a>
+    </div>
     """
+    return render_template_string(html)
 
+# -----------------------------
+#  ПОЛУЧИТЬ VPN (БЕСПЛАТНАЯ НЕДЕЛЯ / ПОДПИСКИ)
+# -----------------------------
 @app.route("/get_vpn_main")
 def get_vpn_main():
     html = """
-    <div style="margin: 40px;">
+    <div class="content-page">
       <h2>Получить VPN</h2>
-      <p>Выберите один из вариантов:</p>
-      <ul style="font-size:1.3rem;">
+      <ul style="list-style:none; padding:0;">
         <li><a href="/free_trial?user_id=DEMO_USER">🎁 Бесплатная неделя</a></li>
         <li><a href="/pay?user_id=DEMO_USER&plan=1m">1 месяц (199₽)</a></li>
         <li><a href="/pay?user_id=DEMO_USER&plan=3m">3 месяца (599₽)</a></li>
         <li><a href="/pay?user_id=DEMO_USER&plan=6m">6 месяцев (1199₽)</a></li>
       </ul>
-      <p>DEMO: user_id=DEMO_USER (в реальном решении укажите реальный ID).</p>
+      <p>Демо: user_id=DEMO_USER</p>
+      <a href="/">Вернуться на главную</a>
     </div>
     """
-    return html
+    return render_template_string(html)
 
 @app.route("/free_trial")
 def free_trial():
     user_id = request.args.get("user_id", "DEMO_USER")
     if is_free_trial_used(user_id):
-        return "<h3>Вы уже использовали бесплатную неделю.</h3>"
+        return render_template_string("""
+        <div class="content-page">
+          <h2>Бесплатная неделя</h2>
+          <p>Вы уже использовали бесплатную неделю.</p>
+          <a href="/">На главную</a>
+        </div>
+        """)
     key_name = f"{datetime.now().strftime('%Y-%m-%d %H:%M')} - {user_id}"
     access_url, key_id = create_outline_key(key_name)
     if not access_url:
-        return "<h3>Ошибка при создании Outline ключа</h3>"
+        return render_template_string("""
+        <div class="content-page">
+          <h2>Ошибка</h2>
+          <p>Не удалось создать Outline ключ.</p>
+          <a href="/">На главную</a>
+        </div>
+        """)
     expiration = datetime.now() + timedelta(days=FREE_TRIAL_DAYS)
     set_free_trial_used(user_id)
     save_subscription(user_id, access_url, key_id, expiration)
-    return f"""
-    <h2>Бесплатная неделя активирована!</h2>
-    <p>Ваш ключ Outline: <code>{access_url}</code></p>
-    <p>Действует до {expiration.strftime('%Y-%m-%d %H:%M')}</p>
-    <a href="/">Назад на главную</a>
-    """
+    return render_template_string(f"""
+    <div class="content-page">
+      <h2>Бесплатная неделя активирована!</h2>
+      <p>Ваш Outline key: <code>{access_url}</code></p>
+      <p>Действует до {expiration.strftime('%Y-%m-%d %H:%M')}</p>
+      <a href="/">На главную</a>
+    </div>
+    """)
 
 @app.route("/pay")
 def pay():
@@ -448,20 +493,33 @@ def pay():
         days = 180
         desc = "Оплата VPN (6 месяцев)"
     else:
-        return "<h3>Неверный план</h3>"
+        return render_template_string("""
+        <div class="content-page">
+          <h2>Ошибка</h2>
+          <p>Неверный план</p>
+          <a href="/">На главную</a>
+        </div>
+        """)
     pay_url = generate_payment_url(user_id, amount, desc)
     if not pay_url:
-        return "<h3>Ошибка генерации ссылки на оплату</h3>"
-    return f"""
-    <h3>{desc} ({amount}₽)</h3>
-    <p><a href="{pay_url}" target="_blank">Оплатить</a></p>
-    <p>После оплаты <a href="/after_payment?user_id={user_id}&days={days}">нажмите сюда</a>, чтобы активировать ключ.</p>
-    <a href="/">На главную</a>
-    """
+        return render_template_string("""
+        <div class="content-page">
+          <h2>Ошибка оплаты</h2>
+          <p>Не удалось сгенерировать ссылку.</p>
+          <a href="/">На главную</a>
+        </div>
+        """)
+    return render_template_string(f"""
+    <div class="content-page">
+      <h2>{desc} ({amount}₽)</h2>
+      <p><a href="{pay_url}" target="_blank">Оплатить</a></p>
+      <p>После оплаты <a href="/after_payment?user_id={user_id}&days={days}">нажмите сюда</a>, чтобы активировать доступ.</p>
+      <a href="/">На главную</a>
+    </div>
+    """)
 
 @app.route("/after_payment")
 def after_payment():
-    """Упрощённый маршрут подтверждения платежа"""
     user_id = request.args.get("user_id", "DEMO_USER")
     days_str = request.args.get("days", "30")
     try:
@@ -471,46 +529,77 @@ def after_payment():
     key_name = f"{datetime.now().strftime('%Y-%m-%d %H:%M')} - {user_id}"
     access_url, key_id = create_outline_key(key_name)
     if not access_url:
-        return "<h3>Ошибка создания Outline ключа!</h3>"
+        return render_template_string("""
+        <div class="content-page">
+          <h2>Ошибка</h2>
+          <p>Не удалось создать ключ Outline!</p>
+          <a href="/">На главную</a>
+        </div>
+        """)
     expiration = datetime.now() + timedelta(days=days)
     save_subscription(user_id, access_url, key_id, expiration)
-    return f"""
-    <h2>Платёж подтверждён (условно)!</h2>
-    <p>Подписка действует до {expiration.strftime('%Y-%m-%d %H:%M')}.</p>
-    <p>Ваш Outline key: <code>{access_url}</code></p>
-    <a href="/">На главную</a>
-    """
+    return render_template_string(f"""
+    <div class="content-page">
+      <h2>Платёж подтверждён (условно)</h2>
+      <p>Подписка действует до {expiration.strftime('%Y-%m-%d %H:%M')}.</p>
+      <p>Ваш Outline key: <code>{access_url}</code></p>
+      <a href="/">На главную</a>
+    </div>
+    """)
 
 @app.route("/my_keys")
 def page_my_keys():
     user_id = request.args.get("user_id", "DEMO_USER")
     row = get_subscription(user_id)
     if not row:
-        return "<h3>У вас нет активной подписки.</h3>"
+        return render_template_string("""
+        <div class="content-page">
+          <h3>Нет активной подписки</h3>
+          <a href="/">На главную</a>
+        </div>
+        """)
     outline_key, key_id, expiration_str = row
     if not expiration_str:
-        return "<h3>Нет данных об истечении срока</h3>"
+        return render_template_string("""
+        <div class="content-page">
+          <h3>Нет данных об истечении срока</h3>
+          <a href="/">На главную</a>
+        </div>
+        """)
     try:
         exp_dt = datetime.fromisoformat(expiration_str)
     except:
-        return "<h3>Ошибка парсинга даты</h3>"
+        return render_template_string("""
+        <div class="content-page">
+          <h3>Ошибка парсинга даты</h3>
+          <a href="/">На главную</a>
+        </div>
+        """)
     now = datetime.now()
     if exp_dt < now:
-        return "<h3>Ваш ключ уже истёк.</h3>"
+        return render_template_string("""
+        <div class="content-page">
+          <h3>Ваш ключ уже истёк</h3>
+          <a href="/">На главную</a>
+        </div>
+        """)
     remaining = exp_dt - now
     days = remaining.days
     hours, rem = divmod(remaining.seconds, 3600)
     minutes, _ = divmod(rem, 60)
-    return f"""
-    <h2>Мои ключи</h2>
-    <p>Ваш Outline key: <code>{outline_key}</code></p>
-    <p>Истекает {exp_dt.strftime('%Y-%m-%d %H:%M')}<br>
-       (через {days} дн, {hours} ч, {minutes} мин)</p>
-    <a href="/">На главную</a>
-    """
+    return render_template_string(f"""
+    <div class="content-page">
+      <h2>Мои ключи</h2>
+      <p>Ваш Outline key: <code>{outline_key}</code></p>
+      <p>Истекает {exp_dt.strftime('%Y-%m-%d %H:%M')}<br/>
+         (через {days} дн, {hours} ч, {minutes} мин)
+      </p>
+      <a href="/">На главную</a>
+    </div>
+    """)
 
 # -----------------------------
-#  Запуск приложения
+#  ЗАПУСК
 # -----------------------------
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
