@@ -402,7 +402,7 @@ INTRO1_HTML = r"""
     }
     .page {
       width: 100%; height: 100%;
-      background: url('https://ibb.co/SXZwKm4n') no-repeat center center / cover;
+      background: url('<a href="https://ibb.co/SXZwKm4n"><img src="https://i.ibb.co/27p3jM1t/6-CEF63-D6-C2-EA-4-C2-C-83-AD-28-BA3-C2-A16-F1.jpg" alt="6-CEF63-D6-C2-EA-4-C2-C-83-AD-28-BA3-C2-A16-F1" border="0" /></a>') no-repeat center center / cover;
       position: relative;
     }
     .button-container {
