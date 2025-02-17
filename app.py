@@ -376,9 +376,10 @@ INDEX_HTML = r"""
 """
 
 @app.route("/")
+@app.route("/")
 def index():
-    # Просто рендерит главную страницу
-    return render_template_string(INDEX_HTML, bg_image=BG_IMAGE_URL)
+    return redirect("/intro?step=1")
+
 
 
 # =============================
