@@ -402,7 +402,7 @@ INTRO1_HTML = r"""
     }
     .page {
       width: 100%; height: 100%;
-      background: url('<a href="https://github.com/salihsukrov/mini-apps/blob/ae346474722137a5f8244a54da2a034374ea09c3/1.jpeg" border="0" /></a>') no-repeat center center / cover;
+      background: url('<a href="https://github.com/salihsukrov/mini-apps/blob/main/1.jpeg?raw=true"') no-repeat center center / cover;
       position: relative;
     }
     .button-container {
