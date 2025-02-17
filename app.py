@@ -320,7 +320,7 @@ MAIN_MENU_HTML = r"""
   <title>SurfGuard - Главное меню</title>
   <style>
     html, body {
-      margin:0; padding:0; background:#000; color:#800080;
+      margin:0; padding:0; background:#000; color:#000;
       font-family:Arial, sans-serif; font-size:120%; font-weight:bold;
       width:100%; height:100%;
     }
@@ -368,7 +368,7 @@ MAIN_MENU_HTML = r"""
     </div>
 
     <button class="menu-btn" onclick="location.href='/partner';">
-      💎 Бонусы
+      💎 Партнёрская программа
     </button>
     <button class="menu-btn" onclick="location.href='/instruction';">
       ⚙ Установка и настройка
@@ -433,13 +433,13 @@ GET_VPN_HTML = r"""
       width:100%; height:100%;
     }
     .container {
-      max-width:600px; margin:50px auto; padding:30px;
+      max-width:600px; margin:100px auto; padding:60px;
     }
     .title {
-      font-size:1.6rem; margin-bottom:20px;
+      font-size:1.6rem; margin-bottom:40px;
     }
     .option {
-      background:#333; border-radius:10px;
+      background:#333; border-radius:20px;
       padding:20px; margin:15px 0; cursor:pointer;
     }
     .option:hover {
@@ -483,9 +483,9 @@ def get_vpn():
 @app.route("/support")
 def page_support():
     html = """
-    <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
+    <div style="max-width:1400px; margin:60px auto; background:#222; padding:80px; border-radius:20px; color:#fff; font-size:140%; font-weight:bold;">
       <h2>Поддержка</h2>
-      <p>Связаться: @SURFGUARD_VPN_help</p>
+      <p>Связаться: https://t.me/surfguard_system/28 </p>
       <a href="/menu" style="color:#fff;">← Меню</a>
     </div>
     """
@@ -505,7 +505,7 @@ def page_instruction():
 @app.route("/partner")
 def page_partner():
     html = """
-    <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
+    <div style="max-width:1400px; margin:80px auto; background:#222; padding:80px; border-radius:20px; color:#fff; font-size:120%; font-weight:bold;">
       <h2>Партнёрская программа</h2>
       <p>Пригласите 5 друзей = +1 месяц VPN!</p>
       <a href="/menu" style="color:#fff;">← Меню</a>
