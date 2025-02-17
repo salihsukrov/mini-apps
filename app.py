@@ -20,7 +20,7 @@ except ImportError:
 # -----------------------------
 #  НАСТРОЙКИ / КОНСТАНТЫ
 # -----------------------------
-API_TOKEN = "TELEGRAM_BOT_TOKEN_IGNORED"  # Уже не используется для Telegram
+API_TOKEN = "TELEGRAM_BOT_TOKEN_IGNORED"  # Уже не используется
 YOOMONEY_TOKEN    = os.getenv('YOOMONEY_TOKEN', '4100116412273743.9FF0D8315EF8D02914C839B78EAFF293DC40AF6FF2F0E0BB0B312E709C950E13462F1D21594AF6602C672CE7099E66EF89971092FE5721FD778ED82C94531CE214AF890905832DC355814DA3564B7F27C0F61AC402A9FBE0784E6DF116851ECDA2A8C1DA6BBE1B2B85E72BF04FBFBC61085747E5F662CF0406DB9CB4B36EF809')
 YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
 
@@ -28,17 +28,18 @@ YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
 OUTLINE_API_URL   = os.getenv('OUTLINE_API_URL', 'https://194.87.83.100:12245/ys7r0QWOtNdWJGUDtAvqGw')
 OUTLINE_API_KEY   = os.getenv('OUTLINE_API_KEY', '4d18c537-566b-46c3-b937-bcc28378b306')  # Bearer-токен, если нужно
 OUTLINE_DISABLE_SSL_CHECK = True  # Иногда надо отключать проверку SSL (небезопасно!)
+OUTLINE_DISABLE_SSL_CHECK = True
 
 DB_NAME = "surfvpn.db"
 FREE_TRIAL_DAYS = 7
 
-# Фоновая картинка
+# Фон на главной
 BG_IMAGE_URL = "https://github.com/salihsukrov/mini-apps/blob/60fbefe35116225d286b4a32d6cd8d60a8df6503/backgro.jpg"
 
 app = Flask(__name__)
 
 # -----------------------------
-#  ИНИЦИАЛИЗАЦИЯ БД
+# ИНИЦИАЛИЗАЦИЯ БД
 # -----------------------------
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -74,7 +75,7 @@ def get_conn():
     return sqlite3.connect(DB_NAME, check_same_thread=False)
 
 # -----------------------------
-#  ФУНКЦИИ ДЛЯ ПОДПИСОК, РЕФЕРАЛОВ
+# ФУНКЦИИ ДЛЯ ПОДПИСОК, РЕФЕРАЛОВ
 # -----------------------------
 def is_free_trial_used(user_id: str) -> bool:
     conn = get_conn()
@@ -154,7 +155,7 @@ def get_referrals_list(referrer_id: str):
     return rows
 
 # -----------------------------
-#  Outline API (создание / удаление)
+# Outline API
 # -----------------------------
 def create_outline_key(name: str):
     headers = {"Content-Type": "application/json"}
@@ -198,7 +199,7 @@ def delete_outline_key(key_id: str) -> bool:
         return False
 
 # -----------------------------
-#  УДАЛЕНИЕ ПРОСРОЧЕННЫХ ПОДПИСОК
+# Фоновый поток
 # -----------------------------
 def subscription_checker():
     while True:
@@ -229,7 +230,7 @@ def subscription_checker():
 threading.Thread(target=subscription_checker, daemon=True).start()
 
 # -----------------------------
-#  YooMoney: ссылка на оплату
+# YooMoney: ссылка на оплату
 # -----------------------------
 def generate_payment_url(user_id: str, amount: float, description: str) -> str:
     if not Quickpay:
@@ -247,7 +248,7 @@ def generate_payment_url(user_id: str, amount: float, description: str) -> str:
     return quickpay.base_url
 
 # -----------------------------
-#  ГЛАВНАЯ СТРАНИЦА (Шаблон)
+#  ГЛАВНАЯ СТРАНИЦА
 # -----------------------------
 INDEX_HTML = r"""
 <!DOCTYPE html>
@@ -288,7 +289,6 @@ INDEX_HTML = r"""
     h1.heading {
       margin-bottom: 30px;
       font-size: 2.4rem;
-      /* Без glow, просто белый */
     }
     .desc {
       margin-bottom: 40px;
@@ -379,9 +379,178 @@ INDEX_HTML = r"""
 @app.route("/")
 def index():
     return render_template_string(INDEX_HTML, bg_image=BG_IMAGE_URL)
+    # Если хотите, чтобы при заходе на главную
+    # сразу открывался /welcome1, сделайте:
+    # return redirect("/welcome1")
 
 # -----------------------------
-#  ПОДДЕРЖКА
+# Две приветственные страницы
+# -----------------------------
+WELCOME1_HTML = r"""
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>SurfGuard VPN - Добро пожаловать</title>
+  <style>
+    /* Те же большие шрифты и жирность */
+    body {
+      margin: 0; padding: 0;
+      background: url('https://imgur.com/a/bZepBmb') no-repeat center center fixed;
+      background-size: cover;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 2rem;
+      color: #fff;
+    }
+    .overlay {
+      width: 100vw; height: 100vh;
+      background-color: rgba(0,0,0,0.4);
+      display: flex; 
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .title {
+      margin-bottom: 20px;
+      font-size: 2.6rem;
+    }
+    .arrow-btn {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      border: 2px solid #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2rem;
+      color: #fff;
+      cursor: pointer;
+      text-decoration: none;
+      margin-top: 30px;
+    }
+    .arrow-btn:hover {
+      background: rgba(255,255,255,0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <div class="title">ДОБРО ПОЖАЛОВАТЬ В<br>SURFGUARD VPN</div>
+    <a class="arrow-btn" href="/welcome2">➜</a>
+  </div>
+</body>
+</html>
+"""
+
+WELCOME2_HTML = r"""
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>SurfGuard VPN - Установка</title>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background: url('https://imgur.com/jUFaxsY') no-repeat center center fixed;
+      background-size: cover;
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 2rem;
+      color: #fff;
+    }
+    .overlay {
+      width: 100vw; height: 100vh;
+      background-color: rgba(0,0,0,0.4);
+      display: flex; 
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 30px;
+    }
+    .title {
+      font-size: 2.4rem; 
+      margin-bottom: 20px;
+    }
+    .subtitle {
+      font-size: 1.4rem;
+      line-height: 1.4;
+      margin-bottom: 30px;
+      max-width: 600px;
+    }
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 40px;
+      width: 80%;
+      max-width: 400px;
+    }
+    .menu button {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 1.2rem;
+      border: 2px solid #fff;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .menu button:hover {
+      background: rgba(255,255,255,0.4);
+    }
+    .arrow-btn {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      border: 2px solid #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2rem;
+      color: #fff;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .arrow-btn:hover {
+      background: rgba(255,255,255,0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <div class="title">Установка и настройка</div>
+    <div class="subtitle" style="font-size:1.3rem;">
+      Для установки и настройки VPN на вашем устройстве
+      зайдите в раздел «Установка» или «Инструкция».
+    </div>
+    
+    <div class="menu">
+      <button onclick="location.href='/bonuses';">Бонусы</button>
+      <button onclick="location.href='/support';">Поддержка</button>
+      <button onclick="location.href='/pay?user_id=DEMO_USER&plan=1m';">Оформить подписку</button>
+      <button onclick="location.href='/instruction';">Установка и настройка</button>
+    </div>
+    
+    <a class="arrow-btn" href="/">➜</a>
+  </div>
+</body>
+</html>
+"""
+
+@app.route("/welcome1")
+def welcome1():
+    return WELCOME1_HTML
+
+@app.route("/welcome2")
+def welcome2():
+    return WELCOME2_HTML
+
+
+# -----------------------------
+# СТРАНИЦЫ ПОДДЕРЖКИ, ИНСТРУКЦИИ, ПАРТНЕРКИ
 # -----------------------------
 @app.route("/support")
 def page_support():
@@ -394,9 +563,6 @@ def page_support():
     """
     return render_template_string(html)
 
-# -----------------------------
-#  ИНСТРУКЦИЯ
-# -----------------------------
 @app.route("/instruction")
 def page_instruction():
     html = """
@@ -408,23 +574,20 @@ def page_instruction():
     """
     return render_template_string(html)
 
-# -----------------------------
-#  ПАРТНЕРКА
-# -----------------------------
 @app.route("/partner")
 def page_partner():
     html = """
     <div class="content-page">
       <h2>Партнёрская программа</h2>
       <p>Пригласите 5 друзей и получите +1 месяц VPN!</p>
-      <p>Реализуйте логику рефералов при переходе по вашей ссылке и т.д.</p>
+      <p>(Доработайте логику рефералов, если нужно)</p>
       <a href="/">Вернуться на главную</a>
     </div>
     """
     return render_template_string(html)
 
 # -----------------------------
-#  ПОЛУЧИТЬ VPN (БЕСПЛАТНАЯ НЕДЕЛЯ / ПОДПИСКИ)
+#  «ПОЛУЧИТЬ VPN» (БЕСПЛАТНАЯ НЕДЕЛЯ / ПОДПИСКИ)
 # -----------------------------
 @app.route("/get_vpn_main")
 def get_vpn_main():
