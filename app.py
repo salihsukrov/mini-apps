@@ -378,7 +378,7 @@ INDEX_HTML = r"""
 
 @app.route("/")
 def index():
-    return render_template_string(INDEX_HTML, bg_image=BG_IMAGE_URL)
+    return redirect("/welcome1") (INDEX_HTML, bg_image=BG_IMAGE_URL)
     # Если хотите, чтобы при заходе на главную
     # сразу открывался /welcome1, сделайте:
     # return redirect("/welcome1")
