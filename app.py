@@ -533,8 +533,3 @@ app = Flask(__name__)
 @app.route("/")
 def index():
     return "Hello from Flask!"
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8080))
-    # debug=False — чтобы не показывать излишние отладочные логи
-    app.run(host="0.0.0.0", port=port, debug=False)
