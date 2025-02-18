@@ -34,14 +34,14 @@ YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
 ##########################
 # ССЫЛКИ НА ФОНЫ / ИЗОБРАЖЕНИЯ
 ##########################
+# Замените на реальные рабочие ссылки:
+INTRO1_IMG = "https://github.com/salihsukrov/mini-apps/blob/main/111.jpeg?raw=true"
+INTRO2_IMG = "https://github.com/salihsukrov/mini-apps/blob/main/2.jpg?raw=true"
 
-INTRO1_IMG        = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/111.jpeg"
-INTRO2_IMG        = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/2.jpg"
-
-MAIN_MENU_BG      = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
-PARTNER_BG        = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
-GETVPN_BG         = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
-INSTRUCTION_BG    = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
+MAIN_MENU_BG   = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+PARTNER_BG     = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+GETVPN_BG      = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+INSTRUCTION_BG = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
 
 TELEGRAM_CHANNEL_LINK = "https://t.me/YourChannelHere"
 
@@ -127,6 +127,7 @@ def get_subscription(user_id: str):
 # OUTLINE API
 ##########################
 def create_outline_key(name: str):
+    """Псевдо-функция для получения Outline Key."""
     headers = {"Content-Type": "application/json"}
     if OUTLINE_API_KEY:
         headers["Authorization"] = f"Bearer {OUTLINE_API_KEY}"
@@ -140,10 +141,10 @@ def create_outline_key(name: str):
             timeout=10
         )
         if resp.status_code in (200, 201):
-            data = resp.json()
-            return data.get("accessUrl"), data.get("id")
-    except:
-        pass
+            j = resp.json()
+            return j.get("accessUrl"), j.get("id")
+    except Exception as e:
+        print("Create key error:", e)
     return None, None
 
 def delete_outline_key(key_id: str):
@@ -161,11 +162,12 @@ def delete_outline_key(key_id: str):
             timeout=10
         )
         return resp.status_code in (200, 204)
-    except:
+    except Exception as e:
+        print("Delete key error:", e)
         return False
 
 ##########################
-# ФОНОВЫЙ ПОТОК (удаление просроч.)
+# ПОТОК для удаления просроченных
 ##########################
 def subscription_checker():
     while True:
@@ -175,7 +177,7 @@ def subscription_checker():
             c.execute("SELECT user_id, key_id, expiration FROM subscriptions")
             rows = c.fetchall()
             now = datetime.now()
-            for user_id, key_id, exp_str in rows:
+            for user_id, kid, exp_str in rows:
                 if not exp_str:
                     continue
                 try:
@@ -183,11 +185,11 @@ def subscription_checker():
                 except:
                     continue
                 if dt < now:
-                    ok = delete_outline_key(key_id)
+                    ok = delete_outline_key(kid)
                     if ok:
                         c.execute("DELETE FROM subscriptions WHERE user_id=?", (user_id,))
                         conn.commit()
-                        print(f"Expired sub for {user_id}, key={key_id} removed.")
+                        print(f"Removed expired sub: {user_id}, key={kid}")
             conn.close()
         except Exception as e:
             print("checker error:", e)
@@ -196,14 +198,14 @@ def subscription_checker():
 threading.Thread(target=subscription_checker, daemon=True).start()
 
 ##########################
-# YooMoney
+# YOOMONEY
 ##########################
 def generate_payment_url(user_id: str, amount: float, description: str):
     if not Quickpay:
-        print("yoomoney not installed => no link")
+        print("no yoomoney => no link")
         return ""
     label = f"vpn_{user_id}_{uuid.uuid4().hex}"
-    q = Quickpay(
+    quick = Quickpay(
         receiver=YOOMONEY_RECEIVER,
         quickpay_form="shop",
         targets=description,
@@ -211,7 +213,7 @@ def generate_payment_url(user_id: str, amount: float, description: str):
         sum=amount,
         label=label
     )
-    return q.base_url
+    return quick.base_url
 
 ##########################
 # ДВЕ СТРАНИЦЫ INTRO
@@ -294,15 +296,15 @@ INTRO2_HTML = f"""
 
 @app.route("/")
 def index():
-    # Сразу идём на intro, шаг 1
+    # стартуем intro
     return redirect("/intro?step=1")
 
 @app.route("/intro")
 def intro():
     step = request.args.get("step","1")
-    if step=="1":
+    if step == "1":
         return INTRO1_HTML
-    elif step=="2":
+    elif step == "2":
         return INTRO2_HTML
     else:
         return redirect("/menu")
@@ -385,14 +387,15 @@ MAIN_MENU_PAGE = """
 
 @app.route("/menu")
 def menu():
+    # допустим user_id один и тот же (DEMO_USER)
     user_id = "DEMO_USER"
     row = get_subscription(user_id)
     if row:
-        outline_key, kid, exp_str = row
+        outline_key, key_id, exp_str = row
         try:
             dt = datetime.fromisoformat(exp_str)
             now = datetime.now()
-            if dt>now:
+            if dt > now:
                 diff = dt - now
                 days_left = diff.days
                 status = "Оффлайн"
@@ -461,10 +464,7 @@ INSTRUCTION_PAGE = """
 <div class="overlay">
   <div class="icon">🛠</div>
   <h1>Быстрая настройка</h1>
-  <p class="desc">
-    Процесс первичной настройки системы,
-    чтобы начать пользоваться VPN.
-  </p>
+  <p class="desc">Первичная настройка для запуска VPN</p>
   <button class="btn-start" onclick="location.href='{channel}'">
     Начать
   </button>
@@ -512,7 +512,7 @@ PARTNER_PAGE = """
 <div class="overlay">
   <div class="content">
     <h2>Партнёрская программа</h2>
-    <p>Пригласите 5 друзей — получите +1 месяц!</p>
+    <p>Приглашайте друзей и получайте бонусы</p>
     <a href="/menu">← Меню</a>
   </div>
 </div>
@@ -638,11 +638,11 @@ def free_trial():
 def pay():
     user_id = request.args.get("user_id","DEMO_USER")
     plan = request.args.get("plan","1m")
-    if plan=="1m":
+    if plan == "1m":
         amount=199; days=30; desc="1 месяц (199₽)"
-    elif plan=="3m":
+    elif plan == "3m":
         amount=599; days=90; desc="3 месяца (599₽)"
-    elif plan=="6m":
+    elif plan == "6m":
         amount=1199; days=180; desc="6 месяцев (1199₽)"
     else:
         return """
@@ -700,7 +700,7 @@ def after_payment():
     """
 
 ##########################
-# СТАРТ
+# ЗАПУСК
 ##########################
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT","8080")), debug=False)
