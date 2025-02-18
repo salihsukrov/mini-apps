@@ -34,12 +34,15 @@ YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
 ##########################
 # ССЫЛКИ НА ФОНЫ / ИЗОБРАЖЕНИЯ (RAW)
 ##########################
-INTRO1_IMG      = "https://imgur.com/CsMwcj5"
-INTRO2_IMG      = "https://imgur.com/UA3ppM3"
-MAIN_MENU_BG    = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
-PARTNER_BG      = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
-GETVPN_BG       = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
-INSTRUCTION_BG  = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+# Для intro‑страниц используем прямые ссылки (Imgur дает прямые ссылки вида https://i.imgur.com/XXXXXXX.jpg)
+INTRO1_IMG = "https://i.imgur.com/CsMwcj5.jpg"   # вместо "https://imgur.com/CsMwcj5"
+INTRO2_IMG = "https://i.imgur.com/UA3ppM3.jpg"   # вместо "https://imgur.com/UA3ppM3"
+
+# Остальные фоновые изображения – убедитесь, что они возвращают изображение напрямую.
+MAIN_MENU_BG   = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+PARTNER_BG     = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+GETVPN_BG      = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+INSTRUCTION_BG = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
 
 TELEGRAM_CHANNEL_LINK = "https://t.me/YourChannelHere"
 
@@ -125,7 +128,6 @@ def get_subscription(user_id: str):
 # OUTLINE API
 ##########################
 def create_outline_key(name: str):
-    """Создаёт ключ на Outline-сервере."""
     headers = {"Content-Type": "application/json"}
     if OUTLINE_API_KEY:
         headers["Authorization"] = f"Bearer {OUTLINE_API_KEY}"
@@ -167,7 +169,7 @@ def delete_outline_key(key_id: str):
         return False
 
 ##########################
-# ПОТОК УДАЛЕНИЯ ПРОСРОЧЕННЫХ
+# ФОНОВЫЙ ПОТОК (удаление просроченных подписок)
 ##########################
 def subscription_checker():
     while True:
@@ -202,7 +204,7 @@ threading.Thread(target=subscription_checker, daemon=True).start()
 ##########################
 def generate_payment_url(user_id: str, amount: float, description: str):
     if not Quickpay:
-        print("no yoomoney => no link")
+        print("YooMoney не установлен => ссылка не сгенерирована")
         return ""
     label = f"vpn_{user_id}_{uuid.uuid4().hex}"
     quick = Quickpay(
@@ -226,25 +228,25 @@ INTRO1_HTML = f"""
   <title>Intro 1/2</title>
   <style>
     body {{
-      margin:0; padding:0; 
-      background:#000; color:#fff; 
-      font-family:Arial,sans-serif; font-size:120%; font-weight:bold;
+      margin:0; padding:0;
+      background:#000; color:#fff;
+      font-family:Arial, sans-serif; font-size:120%; font-weight:bold;
       width:100%; height:100%;
     }}
     .page {{
       width:100%; height:100%;
-      background:url('{INTRO1_IMG}') no-repeat center center / cover;
-      position:relative;
+      background: url('{INTRO1_IMG}') no-repeat center center / cover;
+      position: relative;
     }}
     .nav-button {{
-      position:absolute; bottom:50px; left:50%; transform:translateX(-50%);
-      background:rgba(0,0,0,0.6); 
-      border:3px solid #fff; border-radius:12px;
-      color:#fff; text-decoration:none; 
-      font-size:1.4rem; padding:15px 25px;
+      position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      border: 3px solid #fff; border-radius: 12px;
+      color: #fff; text-decoration: none;
+      font-size: 1.4rem; padding: 15px 25px;
     }}
     .nav-button:hover {{
-      background:rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.3);
     }}
   </style>
 </head>
@@ -264,25 +266,25 @@ INTRO2_HTML = f"""
   <title>Intro 2/2</title>
   <style>
     body {{
-      margin:0; padding:0; 
-      background:#000; color:#fff; 
-      font-family:Arial,sans-serif; font-size:120%; font-weight:bold;
+      margin:0; padding:0;
+      background:#000; color:#fff;
+      font-family:Arial, sans-serif; font-size:120%; font-weight:bold;
       width:100%; height:100%;
     }}
     .page {{
       width:100%; height:100%;
-      background:url('{INTRO2_IMG}') no-repeat center center / cover;
-      position:relative;
+      background: url('{INTRO2_IMG}') no-repeat center center / cover;
+      position: relative;
     }}
     .nav-button {{
-      position:absolute; bottom:50px; left:50%; transform:translateX(-50%);
-      background:rgba(0,0,0,0.6); 
-      border:3px solid #fff; border-radius:12px;
-      color:#fff; text-decoration:none; 
-      font-size:1.4rem; padding:15px 25px;
+      position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      border: 3px solid #fff; border-radius: 12px;
+      color: #fff; text-decoration: none;
+      font-size: 1.4rem; padding: 15px 25px;
     }}
     .nav-button:hover {{
-      background:rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.3);
     }}
   </style>
 </head>
@@ -300,7 +302,7 @@ def index():
 
 @app.route("/intro")
 def intro():
-    step = request.args.get("step","1")
+    step = request.args.get("step", "1")
     if step == "1":
         return INTRO1_HTML
     elif step == "2":
@@ -320,66 +322,86 @@ MAIN_MENU_PAGE = """
   <style>
     body {
       margin:0; padding:0;
-      background:url('{bg}') no-repeat center center / cover;
-      font-family:Arial,sans-serif; color:#fff; font-size:120%; font-weight:bold;
+      background: url('{bg}') no-repeat center center / cover;
+      font-family:Arial, sans-serif; color:#fff; font-size:120%; font-weight:bold;
       min-height:100vh;
     }
     .overlay {
-      background:rgba(0,0,0,0.5); 
-      min-height:100vh; 
-      padding:40px 20px;
+      background: rgba(0,0,0,0.5);
+      min-height: 100vh;
+      padding: 40px 20px;
     }
     .container {
-      max-width:700px; margin:0 auto;
+      max-width: 700px;
+      margin: 0 auto;
     }
     .sub-info {
-      background:#222; border-radius:14px;
-      padding:30px; margin-bottom:25px;
+      background: #222;
+      border-radius: 14px;
+      padding: 30px;
+      margin-bottom: 25px;
     }
-    .sub-title { font-size:1.3rem; margin-bottom:10px; }
-    .sub-remaining { font-size:1.6rem; margin-bottom:10px; }
-    .sub-details { display:flex; gap:14px; margin-bottom:5px; }
+    .sub-title {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+    }
+    .sub-remaining {
+      font-size: 1.6rem;
+      margin-bottom: 10px;
+    }
+    .sub-details {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 5px;
+    }
     .sub-detail-box {
-      background:#333; border-radius:10px;
-      padding:10px 15px;
+      background: #333;
+      border-radius: 10px;
+      padding: 10px 15px;
     }
     .menu-btn {
-      display:block; width:100%;
-      background:#333; color:#fff;
-      text-align:left; padding:20px;
-      margin:10px 0; border:none; border-radius:10px;
-      font-size:1.2rem; cursor:pointer;
+      display: block;
+      width: 100%;
+      background: #333;
+      color: #fff;
+      text-align: left;
+      padding: 20px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      cursor: pointer;
     }
     .menu-btn:hover {
-      background:#444;
+      background: #444;
     }
   </style>
 </head>
 <body>
-<div class="overlay">
-  <div class="container">
-    <div class="sub-info">
-      <div class="sub-title">PRO-подписка</div>
-      <div class="sub-remaining">Осталось {days_left} дней</div>
-      <div class="sub-details">
-        <div class="sub-detail-box">Статус: {status}</div>
-        <div class="sub-detail-box">Подписка: {sub_state}</div>
+  <div class="overlay">
+    <div class="container">
+      <div class="sub-info">
+        <div class="sub-title">PRO-подписка</div>
+        <div class="sub-remaining">Осталось {days_left} дней</div>
+        <div class="sub-details">
+          <div class="sub-detail-box">Статус: {status}</div>
+          <div class="sub-detail-box">Подписка: {sub_state}</div>
+        </div>
       </div>
+      <button class="menu-btn" onclick="location.href='/instruction'">
+        ⚙ Быстрая настройка
+      </button>
+      <button class="menu-btn" onclick="location.href='/partner'">
+        💎 Бонусы
+      </button>
+      <button class="menu-btn" onclick="location.href='/support'">
+        ❓ Поддержка
+      </button>
+      <button class="menu-btn" onclick="location.href='/get_vpn'">
+        🔥 Получить VPN
+      </button>
     </div>
-    <button class="menu-btn" onclick="location.href='/instruction'">
-      ⚙ Быстрая настройка
-    </button>
-    <button class="menu-btn" onclick="location.href='/partner'">
-      💎 Бонусы
-    </button>
-    <button class="menu-btn" onclick="location.href='/support'">
-      ❓ Поддержка
-    </button>
-    <button class="menu-btn" onclick="location.href='/get_vpn'">
-      🔥 Получить VPN
-    </button>
   </div>
-</div>
 </body>
 </html>
 """
@@ -429,44 +451,44 @@ INSTRUCTION_PAGE = f"""
   <style>
     body {{
       margin:0; padding:0;
-      background:url('{INSTRUCTION_BG}') no-repeat center center / cover;
-      font-family:Arial,sans-serif; color:#fff; font-size:120%; font-weight:bold;
+      background: url('{INSTRUCTION_BG}') no-repeat center center / cover;
+      font-family:Arial, sans-serif; color:#fff; font-size:120%; font-weight:bold;
       min-height:100vh;
-      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
     }}
     .overlay {{
-      background:rgba(0,0,0,0.5);
-      width:100%; min-height:100vh;
-      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      background: rgba(0,0,0,0.5);
+      width: 100%; min-height: 100vh;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
     }}
     .icon {{
-      font-size:4rem; margin-bottom:20px; 
+      font-size: 4rem; margin-bottom: 20px;
     }}
     h1 {{
-      margin-bottom:10px; font-size:2rem;
+      margin-bottom: 10px; font-size: 2rem;
     }}
     p.desc {{
-      max-width:500px; text-align:center; margin-bottom:30px;
-      font-weight:normal; line-height:1.4; font-size:1rem;
+      max-width: 500px; text-align: center; margin-bottom: 30px;
+      font-weight: normal; line-height: 1.4; font-size: 1rem;
     }}
     .btn-start {{
-      background:#fff; color:#000; font-size:1.2rem; 
-      padding:15px 30px; border-radius:30px; border:none; cursor:pointer; 
+      background: #fff; color: #000; font-size: 1.2rem;
+      padding: 15px 30px; border-radius: 30px; border: none; cursor: pointer;
     }}
     .btn-start:hover {{
-      background:#eee;
+      background: #eee;
     }}
   </style>
 </head>
 <body>
-<div class="overlay">
-  <div class="icon">🛠</div>
-  <h1>Быстрая настройка</h1>
-  <p class="desc">Первичная настройка для запуска VPN</p>
-  <button class="btn-start" onclick="location.href='{TELEGRAM_CHANNEL_LINK}'">
-    Начать
-  </button>
-</div>
+  <div class="overlay">
+    <div class="icon">🛠</div>
+    <h1>Быстрая настройка</h1>
+    <p class="desc">Первичная настройка для запуска VPN</p>
+    <button class="btn-start" onclick="location.href='{TELEGRAM_CHANNEL_LINK}'">
+      Начать
+    </button>
+  </div>
 </body>
 </html>
 """
@@ -487,33 +509,35 @@ PARTNER_PAGE = f"""
   <style>
     body {{
       margin:0; padding:0;
-      background:url('{PARTNER_BG}') no-repeat center center / cover;
-      font-family:Arial,sans-serif; color:#fff; font-size:120%; font-weight:bold;
+      background: url('{PARTNER_BG}') no-repeat center center / cover;
+      font-family:Arial, sans-serif; color:#fff; font-size:120%; font-weight:bold;
       min-height:100vh;
     }}
     .overlay {{
-      background:rgba(0,0,0,0.6);
-      min-height:100vh; padding:40px;
+      background: rgba(0,0,0,0.6);
+      min-height: 100vh; padding: 40px;
     }}
     .content {{
-      max-width:700px; margin:0 auto;
-      background:rgba(255,255,255,0.1); border-radius:10px;
-      padding:30px;
+      max-width: 700px; margin: 0 auto;
+      background: rgba(255,255,255,0.1); border-radius: 10px;
+      padding: 30px;
     }}
-    h2 {{ margin-top:0; }}
+    h2 {{
+      margin-top: 0;
+    }}
     a {{
-      color:#fff; text-decoration:none;
+      color: #fff; text-decoration: none;
     }}
   </style>
 </head>
 <body>
-<div class="overlay">
-  <div class="content">
-    <h2>Партнёрская программа</h2>
-    <p>Приглашайте друзей и получайте бонусы</p>
-    <a href="/menu">← Меню</a>
+  <div class="overlay">
+    <div class="content">
+      <h2>Партнёрская программа</h2>
+      <p>Приглашайте друзей и получайте бонусы</p>
+      <a href="/menu">← Меню</a>
+    </div>
   </div>
-</div>
 </body>
 </html>
 """
@@ -534,46 +558,44 @@ GETVPN_PAGE = f"""
   <style>
     body {{
       margin:0; padding:0;
-      background:url('{GETVPN_BG}') no-repeat center center / cover;
-      font-family:Arial,sans-serif; color:#fff; font-size:120%; font-weight:bold;
+      background: url('{GETVPN_BG}') no-repeat center center / cover;
+      font-family:Arial, sans-serif; color:#fff; font-size:120%; font-weight:bold;
       min-height:100vh;
     }}
     .overlay {{
-      background:rgba(0,0,0,0.6);
-      min-height:100vh; padding:40px;
+      background: rgba(0,0,0,0.6);
+      min-height: 100vh; padding: 40px;
     }}
     .container {{
-      max-width:600px; margin:0 auto;
+      max-width: 600px; margin: 0 auto;
     }}
     h2 {{
-      margin-top:0; margin-bottom:20px;
-      font-size:1.6rem;
+      margin-top: 0; margin-bottom: 20px;
+      font-size: 1.6rem;
     }}
     .option {{
-      background:#333; border-radius:10px;
-      padding:20px; margin:15px 0; cursor:pointer;
+      background: #333; border-radius: 10px;
+      padding: 20px; margin: 15px 0; cursor: pointer;
     }}
     .option:hover {{
-      background:#444;
+      background: #444;
     }}
     a {{
-      color:#fff; text-decoration:none;
+      color: #fff; text-decoration: none;
     }}
   </style>
 </head>
 <body>
-<div class="overlay">
-  <div class="container">
-    <h2>Продлить/Получить VPN</h2>
-
-    <div class="option"><a href="/free_trial?user_id=DEMO_USER">1 неделя (бесплатно)</a></div>
-    <div class="option"><a href="/pay?user_id=DEMO_USER&plan=1m">1 месяц (199₽)</a></div>
-    <div class="option"><a href="/pay?user_id=DEMO_USER&plan=3m">3 месяца (599₽)</a></div>
-    <div class="option"><a href="/pay?user_id=DEMO_USER&plan=6m">6 месяцев (1199₽)</a></div>
-
-    <p><a href="/menu" style="color:#fff;">← Назад</a></p>
+  <div class="overlay">
+    <div class="container">
+      <h2>Продлить/Получить VPN</h2>
+      <div class="option"><a href="/free_trial?user_id=DEMO_USER">1 неделя (бесплатно)</a></div>
+      <div class="option"><a href="/pay?user_id=DEMO_USER&plan=1m">1 месяц (199₽)</a></div>
+      <div class="option"><a href="/pay?user_id=DEMO_USER&plan=3m">3 месяца (599₽)</a></div>
+      <div class="option"><a href="/pay?user_id=DEMO_USER&plan=6m">6 месяцев (1199₽)</a></div>
+      <p><a href="/menu" style="color:#fff;">← Назад</a></p>
+    </div>
   </div>
-</div>
 </body>
 </html>
 """
@@ -601,7 +623,7 @@ def support():
 ##########################
 @app.route("/free_trial")
 def free_trial():
-    user_id = request.args.get("user_id","DEMO_USER")
+    user_id = request.args.get("user_id", "DEMO_USER")
     if is_free_trial_used(user_id):
         return """
         <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
@@ -634,14 +656,14 @@ def free_trial():
 
 @app.route("/pay")
 def pay():
-    user_id = request.args.get("user_id","DEMO_USER")
-    plan = request.args.get("plan","1m")
+    user_id = request.args.get("user_id", "DEMO_USER")
+    plan = request.args.get("plan", "1m")
     if plan == "1m":
-        amount=199; days=30; desc="1 месяц (199₽)"
+        amount = 199; days = 30; desc = "1 месяц (199₽)"
     elif plan == "3m":
-        amount=599; days=90; desc="3 месяца (599₽)"
+        amount = 599; days = 90; desc = "3 месяца (599₽)"
     elif plan == "6m":
-        amount=1199; days=180; desc="6 месяцев (1199₽)"
+        amount = 1199; days = 180; desc = "6 месяцев (1199₽)"
     else:
         return """
         <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
@@ -670,12 +692,12 @@ def pay():
 
 @app.route("/after_payment")
 def after_payment():
-    user_id = request.args.get("user_id","DEMO_USER")
-    days_str = request.args.get("days","30")
+    user_id = request.args.get("user_id", "DEMO_USER")
+    days_str = request.args.get("days", "30")
     try:
-        days=int(days_str)
+        days = int(days_str)
     except:
-        days=30
+        days = 30
     key_name = f"{datetime.now():%Y-%m-%d %H:%M} - {user_id}"
     access_url, kid = create_outline_key(key_name)
     if not access_url:
@@ -686,7 +708,7 @@ def after_payment():
           <a href="/menu" style="color:#fff;">← Меню</a>
         </div>
         """
-    expiration = datetime.now()+timedelta(days=days)
+    expiration = datetime.now() + timedelta(days=days)
     save_subscription(user_id, access_url, kid, expiration)
     return f"""
     <div style="max-width:800px; margin:40px auto; background:#222; padding:40px; border-radius:10px; color:#fff; font-size:120%; font-weight:bold;">
@@ -701,4 +723,4 @@ def after_payment():
 # ЗАПУСК
 ##########################
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT","8080")), debug=False)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "8080")), debug=False)
