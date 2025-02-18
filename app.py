@@ -35,7 +35,7 @@ YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
 # ССЫЛКИ НА ФОНЫ / ИЗОБРАЖЕНИЯ (RAW)
 ##########################
 # Для intro‑страниц используем прямые ссылки (Imgur дает прямые ссылки вида https://i.imgur.com/XXXXXXX.jpg)
-INTRO1_IMG = "https://i.imgur.com/CsMwcj5.jpg"   # вместо "https://imgur.com/CsMwcj5"
+INTRO1_IMG = "https://github.com/salihsukrov/mini-apps/blob/968c8309c68fd0ad0084a1d1b41df8e8b7c90795/1%20%D1%84%D0%BE%D1%82%D0%BE.jpg"   # вместо "https://imgur.com/CsMwcj5"
 INTRO2_IMG = "https://i.imgur.com/UA3ppM3.jpg"   # вместо "https://imgur.com/UA3ppM3"
 
 # Остальные фоновые изображения – убедитесь, что они возвращают изображение напрямую.
