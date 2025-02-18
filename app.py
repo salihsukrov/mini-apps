@@ -35,7 +35,7 @@ YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
 # ССЫЛКИ НА ФОНЫ / ИЗОБРАЖЕНИЯ
 ##########################
 # Замените на реальные рабочие ссылки:
-INTRO1_IMG = "https://github.com/salihsukrov/mini-apps/blob/main/111.jpeg?raw=true"
+INTRO1_IMG = "https://github.com/salihsukrov/mini-apps/blob/main/1%20%D1%84%D0%BE%D1%82%D0%BE.jpg?raw=true"
 INTRO2_IMG = "https://github.com/salihsukrov/mini-apps/blob/main/2.jpg?raw=true"
 
 MAIN_MENU_BG   = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
