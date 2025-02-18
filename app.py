@@ -18,37 +18,36 @@ except ImportError:
 
 app = Flask(__name__)
 
-############################
+##########################
 # НАСТРОЙКИ
-############################
+##########################
 DB_NAME = "surfvpn.db"
 FREE_TRIAL_DAYS = 7
 
-OUTLINE_API_URL   = os.getenv('OUTLINE_API_URL', 'https://123.45.67.89:8080/SECRET')
+OUTLINE_API_URL   = os.getenv('OUTLINE_API_URL', 'https://194.87.83.100:12245/ys7r0QWOtNdWJGUDtAvqGw')
 OUTLINE_API_KEY   = os.getenv('OUTLINE_API_KEY', '4d18c537-566b-46c3-b937-bcc28378b306')
 OUTLINE_DISABLE_SSL_CHECK = True
 
 YOOMONEY_TOKEN    = os.getenv('YOOMONEY_TOKEN', '4100116412273743.9FF0D8315EF8D02914C839B78EAFF293DC40AF6FF2F0E0BB0B312E709C950E13462F1D21594AF6602C672CE7099E66EF89971092FE5721FD778ED82C94531CE214AF890905832DC355814DA3564B7F27C0F61AC402A9FBE0784E6DF116851ECDA2A8C1DA6BBE1B2B85E72BF04FBFBC61085747E5F662CF0406DB9CB4B36EF809')
 YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
 
-# --- Фоновые изображения (замените на свои ссылки) ---
-# Здесь указываем рабочие ссылки или placeholder:
+##########################
+# ССЫЛКИ НА ФОНЫ / ИЗОБРАЖЕНИЯ
+##########################
+
+INTRO1_IMG        = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/111.jpeg"
+INTRO2_IMG        = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/2.jpg"
+
 MAIN_MENU_BG      = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
 PARTNER_BG        = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
 GETVPN_BG         = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
 INSTRUCTION_BG    = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
 
-# Шаг1, Шаг2 - Intro:
-INTRO1_IMG        = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/111.jpeg"
-INTRO2_IMG        = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/2.jpg"
-
-# Ссылка на ваш Telegram‑канал (куда ведёт «Начать»)
 TELEGRAM_CHANNEL_LINK = "https://t.me/YourChannelHere"
 
-
-############################
+##########################
 # ИНИЦИАЛИЗАЦИЯ БД
-############################
+##########################
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
@@ -82,9 +81,9 @@ init_db()
 def get_conn():
     return sqlite3.connect(DB_NAME, check_same_thread=False)
 
-############################
+##########################
 # ПОДПИСКИ / ЛОГИКА
-############################
+##########################
 def is_free_trial_used(user_id: str) -> bool:
     conn = get_conn()
     c = conn.cursor()
@@ -124,9 +123,9 @@ def get_subscription(user_id: str):
     conn.close()
     return row
 
-############################
+##########################
 # OUTLINE API
-############################
+##########################
 def create_outline_key(name: str):
     headers = {"Content-Type": "application/json"}
     if OUTLINE_API_KEY:
@@ -165,9 +164,9 @@ def delete_outline_key(key_id: str):
     except:
         return False
 
-############################
-# ФОНОВЫЙ ПОТОК (удаляем просроченные)
-############################
+##########################
+# ФОНОВЫЙ ПОТОК (удаление просроч.)
+##########################
 def subscription_checker():
     while True:
         try:
@@ -188,7 +187,7 @@ def subscription_checker():
                     if ok:
                         c.execute("DELETE FROM subscriptions WHERE user_id=?", (user_id,))
                         conn.commit()
-                        print(f"Removed expired sub of {user_id}, key={key_id}")
+                        print(f"Expired sub for {user_id}, key={key_id} removed.")
             conn.close()
         except Exception as e:
             print("checker error:", e)
@@ -196,12 +195,12 @@ def subscription_checker():
 
 threading.Thread(target=subscription_checker, daemon=True).start()
 
-############################
-# YOOMONEY
-############################
+##########################
+# YooMoney
+##########################
 def generate_payment_url(user_id: str, amount: float, description: str):
     if not Quickpay:
-        print("no yoomoney installed => no link")
+        print("yoomoney not installed => no link")
         return ""
     label = f"vpn_{user_id}_{uuid.uuid4().hex}"
     q = Quickpay(
@@ -214,9 +213,9 @@ def generate_payment_url(user_id: str, amount: float, description: str):
     )
     return q.base_url
 
-############################
+##########################
 # ДВЕ СТРАНИЦЫ INTRO
-############################
+##########################
 INTRO1_HTML = f"""
 <!DOCTYPE html>
 <html lang="ru">
@@ -293,6 +292,11 @@ INTRO2_HTML = f"""
 </html>
 """
 
+@app.route("/")
+def index():
+    # Сразу идём на intro, шаг 1
+    return redirect("/intro?step=1")
+
 @app.route("/intro")
 def intro():
     step = request.args.get("step","1")
@@ -303,9 +307,9 @@ def intro():
     else:
         return redirect("/menu")
 
-############################
-# ГЛАВНОЕ МЕНЮ (фон)
-############################
+##########################
+# ГЛАВНОЕ МЕНЮ
+##########################
 MAIN_MENU_PAGE = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -381,7 +385,7 @@ MAIN_MENU_PAGE = """
 
 @app.route("/menu")
 def menu():
-    user_id="DEMO_USER"
+    user_id = "DEMO_USER"
     row = get_subscription(user_id)
     if row:
         outline_key, kid, exp_str = row
@@ -389,22 +393,22 @@ def menu():
             dt = datetime.fromisoformat(exp_str)
             now = datetime.now()
             if dt>now:
-                diff = dt-now
-                days_left=diff.days
-                status="Оффлайн"
-                sub_state="Активна"
+                diff = dt - now
+                days_left = diff.days
+                status = "Оффлайн"
+                sub_state = "Активна"
             else:
-                days_left=0
-                status="Оффлайн"
-                sub_state="Неактивна"
+                days_left = 0
+                status = "Оффлайн"
+                sub_state = "Неактивна"
         except:
-            days_left=0
-            status="Оффлайн"
-            sub_state="Ошибка"
+            days_left = 0
+            status = "Оффлайн"
+            sub_state = "Ошибка"
     else:
-        days_left=0
-        status="Оффлайн"
-        sub_state="Неактивна"
+        days_left = 0
+        status = "Оффлайн"
+        sub_state = "Неактивна"
     return MAIN_MENU_PAGE.format(
         bg=MAIN_MENU_BG,
         days_left=days_left,
@@ -412,9 +416,9 @@ def menu():
         sub_state=sub_state
     )
 
-############################
-# «ИНСТРУКЦИЯ»
-############################
+##########################
+# ИНСТРУКЦИЯ
+##########################
 INSTRUCTION_PAGE = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -458,8 +462,8 @@ INSTRUCTION_PAGE = """
   <div class="icon">🛠</div>
   <h1>Быстрая настройка</h1>
   <p class="desc">
-    Процесс первичной настройки системы, чтобы
-    начать пользоваться VPN.
+    Процесс первичной настройки системы,
+    чтобы начать пользоваться VPN.
   </p>
   <button class="btn-start" onclick="location.href='{channel}'">
     Начать
@@ -473,9 +477,9 @@ INSTRUCTION_PAGE = """
 def instruction():
     return INSTRUCTION_PAGE.format(bg=INSTRUCTION_BG, channel=TELEGRAM_CHANNEL_LINK)
 
-############################
-# Партнёрка
-############################
+##########################
+# ПАРТНЕРКА
+##########################
 PARTNER_PAGE = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -520,9 +524,9 @@ PARTNER_PAGE = """
 def partner():
     return PARTNER_PAGE.format(bg=PARTNER_BG)
 
-############################
-# «ПОЛУЧИТЬ VPN»
-############################
+##########################
+# «Получить VPN»
+##########################
 GETVPN_PAGE = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -580,9 +584,9 @@ GETVPN_PAGE = """
 def get_vpn():
     return GETVPN_PAGE.format(bg=GETVPN_BG)
 
-############################
+##########################
 # SUPPORT
-############################
+##########################
 @app.route("/support")
 def support():
     html = """
@@ -594,9 +598,9 @@ def support():
     """
     return html
 
-############################
-# FREE_TRIAL / PAY
-############################
+##########################
+# FREE TRIAL / PAY
+##########################
 @app.route("/free_trial")
 def free_trial():
     user_id = request.args.get("user_id","DEMO_USER")
@@ -695,8 +699,8 @@ def after_payment():
     </div>
     """
 
-############################
+##########################
 # СТАРТ
-############################
+##########################
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT","8080")), debug=False)
