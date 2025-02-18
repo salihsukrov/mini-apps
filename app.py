@@ -32,16 +32,14 @@ YOOMONEY_TOKEN    = os.getenv('YOOMONEY_TOKEN', '4100116412273743.9FF0D8315EF8D0
 YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
 
 ##########################
-# ССЫЛКИ НА ФОНЫ / ИЗОБРАЖЕНИЯ
+# ССЫЛКИ НА ФОНЫ / ИЗОБРАЖЕНИЯ (RAW)
 ##########################
-# Замените на реальные рабочие ссылки:
-INTRO1_IMG = "<a href="https://ibb.co/Y49HhJWz"><img src="https://i.ibb.co/p6DYdNPt/1.jpg" alt="1" border="0"></a><br /><a target='_blank' href='https://ru.imgbb.com/'>изображение</a><br />"
-INTRO2_IMG = "https://github.com/salihsukrov/mini-apps/blob/main/2.jpg?raw=true"
-
-MAIN_MENU_BG   = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
-PARTNER_BG     = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
-GETVPN_BG      = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
-INSTRUCTION_BG = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+INTRO1_IMG      = "https://github.com/salihsukrov/mini-apps/blob/main/111.jpeg?raw=true"
+INTRO2_IMG      = "https://github.com/salihsukrov/mini-apps/blob/main/2.jpg?raw=true"
+MAIN_MENU_BG    = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+PARTNER_BG      = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+GETVPN_BG       = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+INSTRUCTION_BG  = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
 
 TELEGRAM_CHANNEL_LINK = "https://t.me/YourChannelHere"
 
@@ -127,7 +125,7 @@ def get_subscription(user_id: str):
 # OUTLINE API
 ##########################
 def create_outline_key(name: str):
-    """Псевдо-функция для получения Outline Key."""
+    """Создаёт ключ на Outline-сервере."""
     headers = {"Content-Type": "application/json"}
     if OUTLINE_API_KEY:
         headers["Authorization"] = f"Bearer {OUTLINE_API_KEY}"
@@ -141,10 +139,12 @@ def create_outline_key(name: str):
             timeout=10
         )
         if resp.status_code in (200, 201):
-            j = resp.json()
-            return j.get("accessUrl"), j.get("id")
+            data = resp.json()
+            return data.get("accessUrl"), data.get("id")
+        else:
+            print("Ошибка Outline:", resp.status_code, resp.text)
     except Exception as e:
-        print("Create key error:", e)
+        print("Ошибка создания Outline ключа:", e)
     return None, None
 
 def delete_outline_key(key_id: str):
@@ -163,11 +163,11 @@ def delete_outline_key(key_id: str):
         )
         return resp.status_code in (200, 204)
     except Exception as e:
-        print("Delete key error:", e)
+        print("Ошибка удаления Outline ключа:", e)
         return False
 
 ##########################
-# ПОТОК для удаления просроченных
+# ПОТОК УДАЛЕНИЯ ПРОСРОЧЕННЫХ
 ##########################
 def subscription_checker():
     while True:
@@ -189,7 +189,7 @@ def subscription_checker():
                     if ok:
                         c.execute("DELETE FROM subscriptions WHERE user_id=?", (user_id,))
                         conn.commit()
-                        print(f"Removed expired sub: {user_id}, key={kid}")
+                        print(f"Удалена просроченная подписка: {user_id}, ключ={kid}")
             conn.close()
         except Exception as e:
             print("checker error:", e)
@@ -296,7 +296,6 @@ INTRO2_HTML = f"""
 
 @app.route("/")
 def index():
-    # стартуем intro
     return redirect("/intro?step=1")
 
 @app.route("/intro")
@@ -387,7 +386,6 @@ MAIN_MENU_PAGE = """
 
 @app.route("/menu")
 def menu():
-    # допустим user_id один и тот же (DEMO_USER)
     user_id = "DEMO_USER"
     row = get_subscription(user_id)
     if row:
@@ -422,42 +420,42 @@ def menu():
 ##########################
 # ИНСТРУКЦИЯ
 ##########################
-INSTRUCTION_PAGE = """
+INSTRUCTION_PAGE = f"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>Быстрая настройка</title>
   <style>
-    body {
+    body {{
       margin:0; padding:0;
-      background:url('{bg}') no-repeat center center / cover;
+      background:url('{INSTRUCTION_BG}') no-repeat center center / cover;
       font-family:Arial,sans-serif; color:#fff; font-size:120%; font-weight:bold;
       min-height:100vh;
       display:flex; flex-direction:column; justify-content:center; align-items:center;
-    }
-    .overlay {
+    }}
+    .overlay {{
       background:rgba(0,0,0,0.5);
       width:100%; min-height:100vh;
       display:flex; flex-direction:column; justify-content:center; align-items:center;
-    }
-    .icon {
+    }}
+    .icon {{
       font-size:4rem; margin-bottom:20px; 
-    }
-    h1 {
+    }}
+    h1 {{
       margin-bottom:10px; font-size:2rem;
-    }
-    p.desc {
+    }}
+    p.desc {{
       max-width:500px; text-align:center; margin-bottom:30px;
       font-weight:normal; line-height:1.4; font-size:1rem;
-    }
-    .btn-start {
+    }}
+    .btn-start {{
       background:#fff; color:#000; font-size:1.2rem; 
       padding:15px 30px; border-radius:30px; border:none; cursor:pointer; 
-    }
-    .btn-start:hover {
+    }}
+    .btn-start:hover {{
       background:#eee;
-    }
+    }}
   </style>
 </head>
 <body>
@@ -465,7 +463,7 @@ INSTRUCTION_PAGE = """
   <div class="icon">🛠</div>
   <h1>Быстрая настройка</h1>
   <p class="desc">Первичная настройка для запуска VPN</p>
-  <button class="btn-start" onclick="location.href='{channel}'">
+  <button class="btn-start" onclick="location.href='{TELEGRAM_CHANNEL_LINK}'">
     Начать
   </button>
 </div>
@@ -475,37 +473,37 @@ INSTRUCTION_PAGE = """
 
 @app.route("/instruction")
 def instruction():
-    return INSTRUCTION_PAGE.format(bg=INSTRUCTION_BG, channel=TELEGRAM_CHANNEL_LINK)
+    return INSTRUCTION_PAGE
 
 ##########################
 # ПАРТНЕРКА
 ##########################
-PARTNER_PAGE = """
+PARTNER_PAGE = f"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>Партнёрская программа</title>
   <style>
-    body {
+    body {{
       margin:0; padding:0;
-      background:url('{bg}') no-repeat center center / cover;
+      background:url('{PARTNER_BG}') no-repeat center center / cover;
       font-family:Arial,sans-serif; color:#fff; font-size:120%; font-weight:bold;
       min-height:100vh;
-    }
-    .overlay {
+    }}
+    .overlay {{
       background:rgba(0,0,0,0.6);
       min-height:100vh; padding:40px;
-    }
-    .content {
+    }}
+    .content {{
       max-width:700px; margin:0 auto;
       background:rgba(255,255,255,0.1); border-radius:10px;
       padding:30px;
-    }
-    h2 { margin-top:0; }
-    a {
+    }}
+    h2 {{ margin-top:0; }}
+    a {{
       color:#fff; text-decoration:none;
-    }
+    }}
   </style>
 </head>
 <body>
@@ -522,45 +520,45 @@ PARTNER_PAGE = """
 
 @app.route("/partner")
 def partner():
-    return PARTNER_PAGE.format(bg=PARTNER_BG)
+    return PARTNER_PAGE
 
 ##########################
 # «Получить VPN»
 ##########################
-GETVPN_PAGE = """
+GETVPN_PAGE = f"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>Получить VPN</title>
   <style>
-    body {
+    body {{
       margin:0; padding:0;
-      background:url('{bg}') no-repeat center center / cover;
+      background:url('{GETVPN_BG}') no-repeat center center / cover;
       font-family:Arial,sans-serif; color:#fff; font-size:120%; font-weight:bold;
       min-height:100vh;
-    }
-    .overlay {
+    }}
+    .overlay {{
       background:rgba(0,0,0,0.6);
       min-height:100vh; padding:40px;
-    }
-    .container {
+    }}
+    .container {{
       max-width:600px; margin:0 auto;
-    }
-    h2 {
+    }}
+    h2 {{
       margin-top:0; margin-bottom:20px;
       font-size:1.6rem;
-    }
-    .option {
+    }}
+    .option {{
       background:#333; border-radius:10px;
       padding:20px; margin:15px 0; cursor:pointer;
-    }
-    .option:hover {
+    }}
+    .option:hover {{
       background:#444;
-    }
-    a {
+    }}
+    a {{
       color:#fff; text-decoration:none;
-    }
+    }}
   </style>
 </head>
 <body>
@@ -582,7 +580,7 @@ GETVPN_PAGE = """
 
 @app.route("/get_vpn")
 def get_vpn():
-    return GETVPN_PAGE.format(bg=GETVPN_BG)
+    return GETVPN_PAGE
 
 ##########################
 # SUPPORT
