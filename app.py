@@ -31,18 +31,23 @@ OUTLINE_DISABLE_SSL_CHECK = True
 YOOMONEY_TOKEN    = os.getenv('YOOMONEY_TOKEN', '4100116412273743.9FF0D8315EF8D02914C839B78EAFF293DC40AF6FF2F0E0BB0B312E709C950E13462F1D21594AF6602C672CE7099E66EF89971092FE5721FD778ED82C94531CE214AF890905832DC355814DA3564B7F27C0F61AC402A9FBE0784E6DF116851ECDA2A8C1DA6BBE1B2B85E72BF04FBFBC61085747E5F662CF0406DB9CB4B36EF809')
 YOOMONEY_RECEIVER = os.getenv('YOOMONEY_RECEIVER', '4100116412273743')
 
-# --- Фоновые изображения для разных страниц ---
-MAIN_MENU_BG      = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
-PARTNER_BG        = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
-GETVPN_BG         = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
-INSTRUCTION_BG    = "https://github.com/salihsukrov/mini-apps/blob/main/4.jpg?raw=true"
+# --- Фоновые изображения (замените на свои ссылки) ---
+# Здесь указываем рабочие ссылки или placeholder:
+MAIN_MENU_BG      = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
+PARTNER_BG        = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
+GETVPN_BG         = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
+INSTRUCTION_BG    = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/4.jpg"
 
-# --- Ссылка для кнопки «Начать» в инструкции ---
+# Шаг1, Шаг2 - Intro:
+INTRO1_IMG        = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/111.jpeg"
+INTRO2_IMG        = "https://github.com/salihsukrov/mini-apps/blob/db8d7dab725edd025db94d1fb8a90dd08f99be5c/2.jpg"
+
+# Ссылка на ваш Telegram‑канал (куда ведёт «Начать»)
 TELEGRAM_CHANNEL_LINK = "https://t.me/YourChannelHere"
 
 
 ############################
-# ИНИЦ. БД
+# ИНИЦИАЛИЗАЦИЯ БД
 ############################
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -161,7 +166,7 @@ def delete_outline_key(key_id: str):
         return False
 
 ############################
-# ФОНОВЫЙ ПОТОК (удаляем просроч.)
+# ФОНОВЫЙ ПОТОК (удаляем просроченные)
 ############################
 def subscription_checker():
     while True:
@@ -171,7 +176,7 @@ def subscription_checker():
             c.execute("SELECT user_id, key_id, expiration FROM subscriptions")
             rows = c.fetchall()
             now = datetime.now()
-            for user_id, kid, exp_str in rows:
+            for user_id, key_id, exp_str in rows:
                 if not exp_str:
                     continue
                 try:
@@ -179,11 +184,11 @@ def subscription_checker():
                 except:
                     continue
                 if dt < now:
-                    ok = delete_outline_key(kid)
+                    ok = delete_outline_key(key_id)
                     if ok:
                         c.execute("DELETE FROM subscriptions WHERE user_id=?", (user_id,))
                         conn.commit()
-                        print(f"Deleted expired sub for user {user_id}, key {kid}")
+                        print(f"Removed expired sub of {user_id}, key={key_id}")
             conn.close()
         except Exception as e:
             print("checker error:", e)
@@ -196,7 +201,7 @@ threading.Thread(target=subscription_checker, daemon=True).start()
 ############################
 def generate_payment_url(user_id: str, amount: float, description: str):
     if not Quickpay:
-        print("no yoomoney installed")
+        print("no yoomoney installed => no link")
         return ""
     label = f"vpn_{user_id}_{uuid.uuid4().hex}"
     q = Quickpay(
@@ -210,36 +215,36 @@ def generate_payment_url(user_id: str, amount: float, description: str):
     return q.base_url
 
 ############################
-# ПЕРВЫЕ 2 СТРАНИЦЫ (INTRO)
+# ДВЕ СТРАНИЦЫ INTRO
 ############################
-INTRO1_HTML = """
+INTRO1_HTML = f"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>Intro 1/2</title>
   <style>
-    body {
+    body {{
       margin:0; padding:0; 
       background:#000; color:#fff; 
       font-family:Arial,sans-serif; font-size:120%; font-weight:bold;
       width:100%; height:100%;
-    }
-    .page {
+    }}
+    .page {{
       width:100%; height:100%;
-      background:url('https://github.com/salihsukrov/mini-apps/blob/main/111.jpeg?raw=true') no-repeat center center / cover;
+      background:url('{INTRO1_IMG}') no-repeat center center / cover;
       position:relative;
-    }
-    .nav-button {
+    }}
+    .nav-button {{
       position:absolute; bottom:50px; left:50%; transform:translateX(-50%);
       background:rgba(0,0,0,0.6); 
       border:3px solid #fff; border-radius:12px;
       color:#fff; text-decoration:none; 
       font-size:1.4rem; padding:15px 25px;
-    }
-    .nav-button:hover {
+    }}
+    .nav-button:hover {{
       background:rgba(255,255,255,0.3);
-    }
+    }}
   </style>
 </head>
 <body>
@@ -250,34 +255,34 @@ INTRO1_HTML = """
 </html>
 """
 
-INTRO2_HTML = """
+INTRO2_HTML = f"""
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <title>Intro 2/2</title>
   <style>
-    body {
+    body {{
       margin:0; padding:0; 
       background:#000; color:#fff; 
       font-family:Arial,sans-serif; font-size:120%; font-weight:bold;
       width:100%; height:100%;
-    }
-    .page {
+    }}
+    .page {{
       width:100%; height:100%;
-      background:url('https://github.com/salihsukrov/mini-apps/blob/main/2.jpg?raw=true') no-repeat center center / cover;
+      background:url('{INTRO2_IMG}') no-repeat center center / cover;
       position:relative;
-    }
-    .nav-button {
+    }}
+    .nav-button {{
       position:absolute; bottom:50px; left:50%; transform:translateX(-50%);
       background:rgba(0,0,0,0.6); 
       border:3px solid #fff; border-radius:12px;
       color:#fff; text-decoration:none; 
       font-size:1.4rem; padding:15px 25px;
-    }
-    .nav-button:hover {
+    }}
+    .nav-button:hover {{
       background:rgba(255,255,255,0.3);
-    }
+    }}
   </style>
 </head>
 <body>
@@ -296,11 +301,10 @@ def intro():
     elif step=="2":
         return INTRO2_HTML
     else:
-        # Если случайный step, идём в меню
         return redirect("/menu")
 
 ############################
-# ГЛАВНОЕ МЕНЮ
+# ГЛАВНОЕ МЕНЮ (фон)
 ############################
 MAIN_MENU_PAGE = """
 <!DOCTYPE html>
@@ -409,7 +413,7 @@ def menu():
     )
 
 ############################
-# «ИНСТРУКЦИЯ» (Быстрая настройка)
+# «ИНСТРУКЦИЯ»
 ############################
 INSTRUCTION_PAGE = """
 <!DOCTYPE html>
@@ -470,14 +474,14 @@ def instruction():
     return INSTRUCTION_PAGE.format(bg=INSTRUCTION_BG, channel=TELEGRAM_CHANNEL_LINK)
 
 ############################
-# Партнёрка (фон)
+# Партнёрка
 ############################
 PARTNER_PAGE = """
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Партнёрка</title>
+  <title>Партнёрская программа</title>
   <style>
     body {
       margin:0; padding:0;
